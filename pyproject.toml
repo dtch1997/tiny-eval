@@ -1,0 +1,19 @@
+[project]
+name = "steg-games"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Daniel Tan", email = "dtch1997@users.noreply.github.com"},
+]
+dependencies = ["openrouter>=1.0", "python-dotenv>=1.0.1"]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
