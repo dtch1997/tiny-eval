@@ -10,6 +10,10 @@ requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.optional-dependencies]
+experiments = [
+    "pandas>=2.2.3",
+]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
