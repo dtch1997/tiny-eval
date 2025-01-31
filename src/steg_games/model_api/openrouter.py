@@ -1,8 +1,7 @@
 from openai import AsyncOpenAI
 
-
-from steg_games.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from .base import ModelAPIInterface
+from steg_games.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from steg_games.core.types import Message, Choice
 
 class OpenRouterModelAPI(ModelAPIInterface):
@@ -28,11 +27,16 @@ class OpenRouterModelAPI(ModelAPIInterface):
         temperature: float = 1.0,
         logprobs: bool = False
     ) -> list[Choice]:
-        completion = await self.client.chat.completions.create(
-            model=model,
-            messages=[message.to_dict() for message in messages],
-            n=n,
-            temperature=temperature,
-            logprobs=logprobs,
-        )
-        return completion.choices
+        
+        try: 
+            completion = await self.client.chat.completions.create(
+                model=model,
+                messages=[message.to_dict() for message in messages],
+                n=n,
+                temperature=temperature,
+                logprobs=logprobs,
+            )
+            return completion.choices
+        
+        except Exception as e:
+            raise e

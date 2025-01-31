@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from steg_games.core.types import Message, Choice
+
 
 class ModelAPIInterface(ABC):
     """
@@ -6,5 +8,5 @@ class ModelAPIInterface(ABC):
     """
 
     @abstractmethod
-    async def get_response(self, prompt: str, model: str) -> str:
+    async def get_response(self, messages: list[Message], model: str) -> list[Choice]:
         pass
