@@ -2,6 +2,11 @@ from dataclasses import dataclass, asdict
 from typing import Literal
 
 from openai.types.chat.chat_completion import Choice as Choice
+from collections import namedtuple
+
+Prompt = str 
+Response = str
+Completion = namedtuple("Completion", ["prompt", "response"])
 
 @dataclass
 class Message:
@@ -14,13 +19,3 @@ class Message:
     @classmethod
     def from_dict(cls, data: dict) -> "Message":
         return cls(**data)
-
-@dataclass
-class Prompt:
-    system_message: Message
-    context: list[Message] # A list of alternating (user, assistant) messages
-    prompt: str
-
-    @property 
-    def messages(self) -> list[Message]:
-        return [self.system_message] + self.context + [Message(role="user", content=self.prompt)]
