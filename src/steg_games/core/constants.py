@@ -5,7 +5,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 curr_dir = Path(__file__).parent
-load_dotenv(curr_dir / ".env")
+project_dir = curr_dir.parents[1]
+load_dotenv(project_dir / ".env")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
