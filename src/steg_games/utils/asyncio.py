@@ -1,49 +1,56 @@
 import asyncio
-from typing import TypeVar, Callable, Awaitable, List, Any, Union
-
-T = TypeVar('T')
-U = TypeVar('U') 
-V = TypeVar('V')
+from typing import Callable, Awaitable, List, Any, Union
 
 def chain(
-    f: Callable[[T], Awaitable[U]], 
-    g: Callable[[U], Awaitable[V]]
-) -> Callable[[T], Awaitable[V]]:
-    """Chain two async functions together, passing the output of f as input to g.
+    *funcs: Callable[[Any], Awaitable[Any]]
+) -> Callable[[Any], Awaitable[Any]]:
+    """Chain multiple async functions together, passing the output of each as input to the next.
     
     Args:
-        f: First async function to execute
-        g: Second async function to execute with f's result
+        *funcs: Variable number of async functions to chain together. Each function takes
+               the output of the previous function as input.
         
     Returns:
-        An async function that chains f and g together
+        An async function that chains all functions together
     """
-    async def composed(x: T) -> V:
-        return await g(await f(x))
+    async def composed(x: Any) -> Any:
+        result = x
+        for func in funcs:
+            result = await func(result)
+        return result
     return composed
 
 def batch_chain(
-    f: Callable[[T], Awaitable[List[U]]], 
-    g: Callable[[U], Awaitable[Union[V, List[V]]]]
-) -> Callable[[T], Awaitable[List[V]]]:
-    """Chain two async functions where f returns a list and g is applied to each element.
+    *funcs: Callable[[Any], Awaitable[Union[List[Any], Any]]]
+) -> Callable[[Any], Awaitable[List[Any]]]:
+    """Chain multiple async functions where each can return a list or single value.
+    Each function's results are flattened and passed to the next function.
     
     Args:
-        f: First async function that returns a list
-        g: Second async function to apply to each element of f's result
+        *funcs: Variable number of async functions to chain together. Each function
+               can return either a list or single value which will be flattened.
         
     Returns:
-        An async function that chains f and g together, flattening list results from g
+        An async function that chains all functions together, flattening list results
     """
-    async def composed(x: T) -> List[V]:
-        # Get list of intermediate results from f
-        intermediate_results = await f(x)
+    async def composed(x: Any) -> List[Any]:
+        current_results = [x]
         
-        # Create coroutines for each intermediate result
-        coroutines = [g(y) for y in intermediate_results]
-        
-        # Await all coroutines and flatten results
-        results = await asyncio.gather(*coroutines)
-        return [z for sublist in results if isinstance(sublist, list) for z in sublist] or results
+        for func in funcs:
+            # Create coroutines for each current result
+            coroutines = [func(y) for y in current_results]
+            
+            # Await all coroutines
+            results = await asyncio.gather(*coroutines)
+            
+            # Flatten results - if any are lists, unpack them
+            current_results = []
+            for result in results:
+                if isinstance(result, list):
+                    current_results.extend(result)
+                else:
+                    current_results.append(result)
+                    
+        return current_results
     
     return composed
