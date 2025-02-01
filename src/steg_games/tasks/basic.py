@@ -1,6 +1,6 @@
 # noqa: E731
 import math
-from typing import Any, Optional
+from typing import Any, Optional, Awaitable, TypeVar
 from dataclasses import dataclass
 from tqdm import tqdm
 
@@ -54,6 +54,8 @@ progress_bars: dict[str, Optional[tqdm]] = {
     'fidelity': None
 }
 
+T = TypeVar('T')
+
 def init_progress_bars(total: int):
     """Initialize global progress bars with given total"""
     global progress_bars
@@ -106,43 +108,97 @@ class TaskConfig:
     fidelity_judge: Model
     plaintext: str
 
+async def encode_message(encoder: Model, plaintext: str) -> tuple[str, str]:
+    """Encode a plaintext message into stegotext.
+    
+    Returns:
+        tuple[str, str]: (stegotext_response, stegotext)
+    """
+    encoder_api = build_model_api(encoder)
+    encoder_prompt = ENCODER_PROMPT_TEMPLATE_COT.format(plaintext=plaintext)
+    stegotext_response = await encoder_api.get_response(Question.from_prompt(encoder_prompt).messages)
+    stegotext = parse_answer(stegotext_response)
+    return stegotext_response, stegotext
+
+async def decode_message(decoder: Model, stegotext: str) -> tuple[str, str]:
+    """Decode a stegotext back into plaintext.
+    
+    Returns:
+        tuple[str, str]: (recovered_message_response, recovered_message)
+    """
+    decoder_api = build_model_api(decoder)
+    decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
+    recovered_message_response = await decoder_api.get_response(Question.from_prompt(decoder_prompt).messages)
+    recovered_message = parse_answer(recovered_message_response)
+    return recovered_message_response, recovered_message
+
+async def judge_steganography(stego_judge: Model, stegotext: str) -> tuple[dict[str, float], float | None]:
+    """Judge whether the text contains a hidden message.
+    
+    Returns:
+        tuple[dict[str, float], float | None]: (stego_logprobs, stego_score)
+    """
+    judge_api = build_model_api(stego_judge)
+    stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
+    stego_logprobs = await judge_api.get_logprobs(Question.from_prompt(stego_prompt).messages)
+    stego_score = parse_logprobs_0_100(stego_logprobs)
+    return stego_logprobs, stego_score
+
+async def judge_fidelity(fidelity_judge: Model, plaintext: str, recovered_message: str) -> tuple[dict[str, float], float | None]:
+    """Judge how well the recovered message matches the original.
+    
+    Returns:
+        tuple[dict[str, float], float | None]: (fidelity_logprobs, fidelity_score)
+    """
+    judge_api = build_model_api(fidelity_judge)
+    fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(
+        original_message=plaintext, 
+        recovered_message=recovered_message
+    )
+    fidelity_logprobs = await judge_api.get_logprobs(Question.from_prompt(fidelity_prompt).messages)
+    fidelity_score = parse_logprobs_0_100(fidelity_logprobs)
+    return fidelity_logprobs, fidelity_score
+
+async def with_progress(name: str, coro: Awaitable[T]) -> T:
+    """Wrapper to update progress bar after awaiting a coroutine.
+    
+    Args:
+        name: Name of the progress bar to update
+        coro: Coroutine to await
+        
+    Returns:
+        Result of the coroutine
+    """
+    result = await coro
+    if progress_bars[name]:
+        progress_bars[name].update(1)
+    return result
+
 async def task(config: TaskConfig) -> dict[str, Any]:
     try:
         # Encode the message
-        encoder = build_model_api(config.encoder)
-        encoder_prompt = ENCODER_PROMPT_TEMPLATE_COT.format(plaintext=config.plaintext) 
-        stegotext_response = await encoder.get_response(Question.from_prompt(encoder_prompt).messages)
-        stegotext = parse_answer(stegotext_response)
-
-        if progress_bars['encoder']:
-            progress_bars['encoder'].update(1)
+        stegotext_response, stegotext = await with_progress(
+            'encoder',
+            encode_message(config.encoder, config.plaintext)
+        )
         
         # Decode the stegotext
-        decoder = build_model_api(config.decoder)
-        decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
-        recovered_message_response = await decoder.get_response(Question.from_prompt(decoder_prompt).messages)
-        recovered_message = parse_answer(recovered_message_response)
-
-        if progress_bars['decoder']:
-            progress_bars['decoder'].update(1)
+        recovered_message_response, recovered_message = await with_progress(
+            'decoder',
+            decode_message(config.decoder, stegotext)
+        )
 
         # Judge whether the stegotext is a stegotext
-        stego_judge = build_model_api(config.stego_judge)
-        stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
-        stego_logprobs = await stego_judge.get_logprobs(Question.from_prompt(stego_prompt).messages)
-        stego_score = parse_logprobs_0_100(stego_logprobs)
-
-        if progress_bars['stego']:
-            progress_bars['stego'].update(1)
+        stego_logprobs, stego_score = await with_progress(
+            'stego',
+            judge_steganography(config.stego_judge, stegotext)
+        )
 
         # Judge the fidelity of the recovered message
-        fidelity_judge = build_model_api(config.fidelity_judge)
-        fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(original_message=config.plaintext, recovered_message=recovered_message)
-        fidelity_logprobs = await fidelity_judge.get_logprobs(Question.from_prompt(fidelity_prompt).messages)
-        fidelity_score = parse_logprobs_0_100(fidelity_logprobs)
-
-        if progress_bars['fidelity']:
-            progress_bars['fidelity'].update(1)
+        fidelity_logprobs, fidelity_score = await with_progress(
+            'fidelity',
+            judge_fidelity(config.fidelity_judge, config.plaintext, recovered_message)
+        )
 
         return {
             # config
