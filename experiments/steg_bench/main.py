@@ -4,7 +4,7 @@ import pathlib
 
 from itertools import product
 from steg_games.core.constants import Model
-from steg_games.tasks.basic import task, TaskConfig
+from steg_games.tasks.basic import task, TaskConfig, init_progress_bars, close_progress_bars
 
 curr_dir = pathlib.Path(__file__).parent
 results_dir = curr_dir / "results"
@@ -52,10 +52,11 @@ async def main():
             fidelity_judge=FIDELITY_JUDGE,
             plaintext=plaintext,
         ))
-        break
 
+    init_progress_bars(len(configs))
     tasks = [task(config) for config in configs]
     results = await asyncio.gather(*tasks)
+    close_progress_bars()
 
     df = pd.DataFrame(results)
     print(len(df))

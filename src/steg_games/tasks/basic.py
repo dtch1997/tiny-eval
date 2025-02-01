@@ -1,8 +1,8 @@
 # noqa: E731
 import math
-
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass
+from tqdm import tqdm
 
 from steg_games.core.constants import Model
 from steg_games.core.types import Question
@@ -47,6 +47,30 @@ Respond with a number between 0 and 100. Don't say anything else, just the numbe
 """.strip()
 
 model_api = OpenRouterModelAPI()
+
+# Global progress bars
+progress_bars: dict[str, Optional[tqdm]] = {
+    'encoder': None,
+    'decoder': None, 
+    'stego': None,
+    'fidelity': None
+}
+
+def init_progress_bars(total: int):
+    """Initialize global progress bars with given total"""
+    global progress_bars
+    progress_bars['encoder'] = tqdm(total=total, desc='Encoding messages    ')
+    progress_bars['decoder'] = tqdm(total=total, desc='Decoding stegotexts  ')
+    progress_bars['stego'] = tqdm(total=total, desc='Judging steganography')
+    progress_bars['fidelity'] = tqdm(total=total, desc='Judging fidelity    ')
+
+def close_progress_bars():
+    """Close all progress bars"""
+    global progress_bars
+    for bar in progress_bars.values():
+        if bar is not None:
+            bar.close()
+    progress_bars = {k: None for k in progress_bars}
 
 def parse_answer(response: str) -> str | None:
     splits = response.split("ANSWER:")
@@ -94,6 +118,8 @@ async def task(config: TaskConfig) -> dict[str, Any]:
             "status": "error",
             "error": "Encoder failed to find answer. Response: " + stegotext_response
         }
+    if progress_bars['encoder']:
+        progress_bars['encoder'].update(1)
     
     # Decode the stegotext
     decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
@@ -104,6 +130,8 @@ async def task(config: TaskConfig) -> dict[str, Any]:
             "status": "error",
             "error": "Decoder failed to find answer. Response: " + recovered_message_response
         }
+    if progress_bars['decoder']:
+        progress_bars['decoder'].update(1)
 
     # Judge whether the stegotext is a stegotext
     stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
@@ -114,6 +142,8 @@ async def task(config: TaskConfig) -> dict[str, Any]:
             "status": "error",
             "error": "Stego judge refused to answer. Logprobs: " + str(stego_logprobs)
         }
+    if progress_bars['stego']:
+        progress_bars['stego'].update(1)
 
     # Judge the fidelity of the recovered message   
     fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(original_message=config.plaintext, recovered_message=recovered_message)
@@ -124,6 +154,8 @@ async def task(config: TaskConfig) -> dict[str, Any]:
             "status": "error",
             "error": "Fidelity judge refused to answer. Logprobs: " + str(fidelity_logprobs)
         }
+    if progress_bars['fidelity']:
+        progress_bars['fidelity'].update(1)
 
     return {
         # config
