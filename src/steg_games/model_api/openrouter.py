@@ -1,3 +1,10 @@
+import backoff
+import openai
+import time
+from functools import wraps
+import os
+import json
+
 from textwrap import dedent
 from openai import AsyncOpenAI
 
@@ -5,6 +12,27 @@ from .base import ModelAPIInterface
 from steg_games.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from steg_games.core.types import Message, Choice
 from steg_games.core.constants import Model
+
+def on_backoff(details):
+    """We don't print connection error because there's sometimes a lot of them and they're not interesting."""
+    exception_details = details["exception"]
+    if not str(exception_details).startswith("Connection error."):
+        print(exception_details)
+
+@backoff.on_exception(
+    wait_gen=backoff.expo,
+    exception=(
+            openai.RateLimitError,
+            openai.APIConnectionError,
+            openai.APITimeoutError,
+            openai.InternalServerError,
+    ),
+    max_value=60,
+    factor=1.5,
+    on_backoff=on_backoff,
+)
+async def _openai_chat_completion(*, client: AsyncOpenAI, **kwargs):
+    return await client.chat.completions.create(**kwargs)
 
 class OpenRouterModelAPI(ModelAPIInterface):
     """
@@ -41,7 +69,8 @@ class OpenRouterModelAPI(ModelAPIInterface):
     
     async def get_logprobs(self, messages: list[Message], model: Model) -> dict[str, float]:
         """ Get logprobs for the next token. Always samples 1 token."""
-        completion = await self.client.chat.completions.create(
+        completion = await _openai_chat_completion(
+            client=self.client,
             model=model.value,
             messages=[message.to_dict() for message in messages], # type: ignore
             max_tokens=1,
@@ -66,7 +95,6 @@ class OpenRouterModelAPI(ModelAPIInterface):
             result[el.token] = float(el.logprob)
         return result
 
-    
     async def get_response_many(
         self, 
         messages: list[Message], 
@@ -79,7 +107,8 @@ class OpenRouterModelAPI(ModelAPIInterface):
     ) -> list[Choice]:
         
         try: 
-            completion = await self.client.chat.completions.create(
+            completion = await _openai_chat_completion(
+                client=self.client,
                 model=model.value,
                 messages=[message.to_dict() for message in messages], # type: ignore
                 n=n,
