@@ -34,6 +34,14 @@ class Question:
     context: Context
     prompt: Prompt
 
+    @classmethod
+    def from_prompt(cls, prompt: Prompt, context: Context | None = None) -> "Question":
+        return cls(context=context or [], prompt=prompt)
+
+    @property 
+    def messages(self) -> list[Message]:
+        return self.context + [Message(role="user", content=self.prompt)]
+
 @dataclass
 class Completion:
     context: Context

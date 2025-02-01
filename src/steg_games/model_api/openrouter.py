@@ -1,3 +1,4 @@
+from textwrap import dedent
 from openai import AsyncOpenAI
 
 from .base import ModelAPIInterface
@@ -24,6 +25,53 @@ class OpenRouterModelAPI(ModelAPIInterface):
         self, 
         messages: list[Message], 
         model: Model,
+        # extra options 
+        n: int = 1,
+        temperature: float = 1.0,
+        logprobs: bool = False
+    ) -> str:
+        choices = await self.get_response_many(
+            messages, 
+            model, 
+            n=n,
+            temperature=temperature, 
+            logprobs=logprobs
+        )
+        return choices[0].message.content
+    
+    async def get_logprobs(self, messages: list[Message], model: Model) -> dict[str, float]:
+        """ Get logprobs for the next token. Always samples 1 token."""
+        completion = await self.client.chat.completions.create(
+            model=model.value,
+            messages=[message.to_dict() for message in messages], # type: ignore
+            max_tokens=1,
+            temperature=0,
+            logprobs=True,
+            top_logprobs=20,
+        )
+        try:
+            logprobs = completion.choices[0].logprobs.content[0].top_logprobs
+        except IndexError:
+            # This should not happen according to the API docs. But it sometimes does.
+            warning = dedent(f"""\
+                Failed to get logprobs because {model} didn't send them.
+                Returning empty dict, I hope you can handle it.
+                Last completion has empty logprobs.content: {completion}.
+            """)
+            print(warning)
+            return {}
+
+        result = {}
+        for el in logprobs:
+            result[el.token] = float(el.logprob)
+        return result
+
+    
+    async def get_response_many(
+        self, 
+        messages: list[Message], 
+        model: Model,
+        *,
         # extra options 
         n: int = 1,
         temperature: float = 1.0,
