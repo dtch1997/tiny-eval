@@ -39,7 +39,7 @@ class DirectScaffold(ScaffoldingInterface):
         return self.PROMPT_TEMPLATE.format(prompt=prompt)
 
     def _parse_response(self, response: str) -> str:
-        return response.content.split("ANSWER: ")[1]
+        return response.split("ANSWER: ")[1]
 
 class ChainOfThoughtScaffold(ScaffoldingInterface):
     """ Directly prompt the model to do things. """
@@ -53,4 +53,4 @@ class ChainOfThoughtScaffold(ScaffoldingInterface):
         return self.PROMPT_TEMPLATE_COT.format(prompt=prompt)
 
     def _parse_response(self, response: str) -> str:
-        return response.content.split("ANSWER: ")[1]
+        return response.split("ANSWER: ")[1]
