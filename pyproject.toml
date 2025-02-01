@@ -14,6 +14,11 @@ license = {text = "MIT"}
 experiments = [
     "pandas>=2.2.3",
 ]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pyright>=1.1.393",
+]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
