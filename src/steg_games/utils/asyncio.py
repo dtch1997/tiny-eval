@@ -1,6 +1,21 @@
 import asyncio
 from typing import Callable, Awaitable, List, Any, Union
 
+def to_coros(items: List[Any]) -> List[Awaitable[Any]]:
+    """Convert a list of items into a list of coroutines that return those items.
+    
+    Args:
+        items: List of items to convert to coroutines
+        
+    Returns:
+        List of coroutines that return the corresponding items when awaited
+    """
+    async def make_coro(x: Any) -> Any:
+        return x
+        
+    return [make_coro(item) for item in items]
+
+
 def chain(
     *funcs: Callable[[Any], Awaitable[Any]]
 ) -> Callable[[Any], Awaitable[Any]]:

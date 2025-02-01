@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-from steg_games.core.types import Message
 from typing import Callable
 
 class ScaffoldingInterface(ABC):
@@ -39,9 +38,8 @@ class DirectScaffold(ScaffoldingInterface):
     def _format_prompt(self, prompt: str) -> str:
         return self.PROMPT_TEMPLATE.format(prompt=prompt)
 
-    def _parse_response(self, response: Message) -> Message:
-        return Message(role="assistant", content=response.content.split("ANSWER: ")[1])
-
+    def _parse_response(self, response: str) -> str:
+        return response.content.split("ANSWER: ")[1]
 
 class ChainOfThoughtScaffold(ScaffoldingInterface):
     """ Directly prompt the model to do things. """
@@ -54,5 +52,5 @@ class ChainOfThoughtScaffold(ScaffoldingInterface):
     def _format_prompt(self, prompt: str) -> str:
         return self.PROMPT_TEMPLATE_COT.format(prompt=prompt)
 
-    def _parse_response(self, response: Message) -> Message:
-        return Message(role="assistant", content=response.content.split("ANSWER: ")[1])
+    def _parse_response(self, response: str) -> str:
+        return response.content.split("ANSWER: ")[1]
