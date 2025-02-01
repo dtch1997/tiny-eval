@@ -1,9 +1,5 @@
 import backoff
 import openai
-import time
-from functools import wraps
-import os
-import json
 
 from textwrap import dedent
 from openai import AsyncOpenAI
@@ -22,10 +18,10 @@ def on_backoff(details):
 @backoff.on_exception(
     wait_gen=backoff.expo,
     exception=(
-            openai.RateLimitError,
-            openai.APIConnectionError,
-            openai.APITimeoutError,
-            openai.InternalServerError,
+        openai.RateLimitError,
+        openai.APIConnectionError,
+        openai.APITimeoutError,
+        openai.InternalServerError,
     ),
     max_value=60,
     factor=1.5,

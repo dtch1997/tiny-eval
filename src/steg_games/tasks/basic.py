@@ -1,6 +1,5 @@
 # noqa: E731
 import math
-import pathlib
 
 from typing import Any
 from dataclasses import dataclass
