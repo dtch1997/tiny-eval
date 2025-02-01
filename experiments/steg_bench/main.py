@@ -40,7 +40,8 @@ async def main():
     messages = MESSSAGES * 10
     target_models = [
         Model.GPT_4o,
-        Model.DEEPSEEK_CHAT,
+        Model.O1_mini,
+        # Model.DEEPSEEK_CHAT,
     ]
 
     configs = []

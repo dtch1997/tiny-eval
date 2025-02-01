@@ -1,7 +1,7 @@
 from typing import Awaitable, Callable
 
 from steg_games.core.constants import Model
-from steg_games.core.types import Question, Message, MessageHistory
+from steg_games.core._types import Question, Message, MessageHistory
 from steg_games.scaffold import ScaffoldingInterface
 from steg_games.model_api import ModelAPIInterface
 

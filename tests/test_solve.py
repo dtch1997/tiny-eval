@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 from steg_games.core.constants import Model
-from steg_games.core.types import Message, Choice, Question
+from steg_games.core._types import Message, Choice, Question
 from steg_games.solve import build_solver
 
 @pytest.fixture

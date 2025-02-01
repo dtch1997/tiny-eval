@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from tqdm import tqdm
 
 from steg_games.core.constants import Model
-from steg_games.core.types import Question
+from steg_games.core._types import Question
 from steg_games.model_api import build_model_api
 
 ENCODER_PROMPT_TEMPLATE_COT = r"""
@@ -73,10 +73,10 @@ def close_progress_bars():
 def parse_answer(response: str) -> str | None:
     splits = response.split("ANSWER:")
     if len(splits) < 2:
-        return None
+        raise ValueError(f"No answer found in response: {response}")
     answer = splits[1].strip()
     if len(answer) == 0:
-        return None
+        raise ValueError(f"Empty answer found in response: {response}")
     return answer
 
 def parse_logprobs_0_100(logprobs: dict[str, float], threshold: float = 0.25) -> float:
@@ -107,75 +107,65 @@ class TaskConfig:
     plaintext: str
 
 async def task(config: TaskConfig) -> dict[str, Any]:
-    # Encode the message
-    encoder = build_model_api(config.encoder)
-    encoder_prompt = ENCODER_PROMPT_TEMPLATE_COT.format(plaintext=config.plaintext)
-    stegotext_response = await encoder.get_response(Question.from_prompt(encoder_prompt).messages)
-    stegotext = parse_answer(stegotext_response)
-    if stegotext is None:
-        return {
-            "status": "error",
-            "error": "Encoder failed to find answer. Response: " + stegotext_response
-        }
-    if progress_bars['encoder']:
-        progress_bars['encoder'].update(1)
-    
-    # Decode the stegotext
-    decoder = build_model_api(config.decoder)
-    decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
-    recovered_message_response = await decoder.get_response(Question.from_prompt(decoder_prompt).messages)
-    recovered_message = parse_answer(recovered_message_response)
-    if recovered_message is None:
-        return {
-            "status": "error",
-            "error": "Decoder failed to find answer. Response: " + recovered_message_response
-        }
-    if progress_bars['decoder']:
-        progress_bars['decoder'].update(1)
+    try:
+        # Encode the message
+        encoder = build_model_api(config.encoder)
+        encoder_prompt = ENCODER_PROMPT_TEMPLATE_COT.format(plaintext=config.plaintext) 
+        stegotext_response = await encoder.get_response(Question.from_prompt(encoder_prompt).messages)
+        stegotext = parse_answer(stegotext_response)
 
-    # Judge whether the stegotext is a stegotext
-    stego_judge = build_model_api(config.stego_judge)
-    stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
-    stego_logprobs = await stego_judge.get_logprobs(Question.from_prompt(stego_prompt).messages)
-    stego_score = parse_logprobs_0_100(stego_logprobs)
-    if stego_score is None:
+        if progress_bars['encoder']:
+            progress_bars['encoder'].update(1)
+        
+        # Decode the stegotext
+        decoder = build_model_api(config.decoder)
+        decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
+        recovered_message_response = await decoder.get_response(Question.from_prompt(decoder_prompt).messages)
+        recovered_message = parse_answer(recovered_message_response)
+
+        if progress_bars['decoder']:
+            progress_bars['decoder'].update(1)
+
+        # Judge whether the stegotext is a stegotext
+        stego_judge = build_model_api(config.stego_judge)
+        stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
+        stego_logprobs = await stego_judge.get_logprobs(Question.from_prompt(stego_prompt).messages)
+        stego_score = parse_logprobs_0_100(stego_logprobs)
+
+        if progress_bars['stego']:
+            progress_bars['stego'].update(1)
+
+        # Judge the fidelity of the recovered message
+        fidelity_judge = build_model_api(config.fidelity_judge)
+        fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(original_message=config.plaintext, recovered_message=recovered_message)
+        fidelity_logprobs = await fidelity_judge.get_logprobs(Question.from_prompt(fidelity_prompt).messages)
+        fidelity_score = parse_logprobs_0_100(fidelity_logprobs)
+
+        if progress_bars['fidelity']:
+            progress_bars['fidelity'].update(1)
+
+        return {
+            # config
+            "encoder": config.encoder.value,
+            "decoder": config.decoder.value,
+            "stego_judge": config.stego_judge.value,
+            "fidelity_judge": config.fidelity_judge.value,
+            "plaintext": config.plaintext,
+            # status
+            "status": "success",
+            "error": None,
+            # results
+            "stegotext_response": stegotext_response,
+            "stegotext": stegotext,
+            "stego_logprobs": stego_logprobs,
+            "stego_score": stego_score,
+            "recovered_message_response": recovered_message_response,
+            "recovered_message": recovered_message,
+            "fidelity_logprobs": fidelity_logprobs,
+            "fidelity_score": fidelity_score,
+        }
+    except Exception as e:
         return {
             "status": "error",
-            "error": "Stego judge refused to answer. Logprobs: " + str(stego_logprobs)
+            "error": str(e)
         }
-    if progress_bars['stego']:
-        progress_bars['stego'].update(1)
-
-    # Judge the fidelity of the recovered message
-    fidelity_judge = build_model_api(config.fidelity_judge)
-    fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(original_message=config.plaintext, recovered_message=recovered_message)
-    fidelity_logprobs = await fidelity_judge.get_logprobs(Question.from_prompt(fidelity_prompt).messages)
-    fidelity_score = parse_logprobs_0_100(fidelity_logprobs)
-    if fidelity_score is None:
-        return {
-            "status": "error",
-            "error": "Fidelity judge refused to answer. Logprobs: " + str(fidelity_logprobs)
-        }
-    if progress_bars['fidelity']:
-        progress_bars['fidelity'].update(1)
-
-    return {
-        # config
-        "encoder": config.encoder.value,
-        "decoder": config.decoder.value,
-        "stego_judge": config.stego_judge.value,
-        "fidelity_judge": config.fidelity_judge.value,
-        "plaintext": config.plaintext,
-        # status
-        "status": "success",
-        "error": None,
-        # results
-        "stegotext_response": stegotext_response,
-        "stegotext": stegotext,
-        "stego_logprobs": stego_logprobs,
-        "stego_score": stego_score,
-        "recovered_message_response": recovered_message_response,
-        "recovered_message": recovered_message,
-        "fidelity_logprobs": fidelity_logprobs,
-        "fidelity_score": fidelity_score,
-    }

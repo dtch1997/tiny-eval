@@ -5,7 +5,7 @@ from textwrap import dedent
 from openai import AsyncOpenAI
 
 from .base import ModelAPIInterface
-from steg_games.core.types import Message, Choice
+from steg_games.core._types import Message, Choice
 
 def on_backoff(details):
     """We don't print connection error because there's sometimes a lot of them and they're not interesting."""

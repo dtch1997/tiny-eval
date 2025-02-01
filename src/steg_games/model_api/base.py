@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from steg_games.core.types import Message
+from steg_games.core._types import Message
 
 class ModelAPIInterface(ABC):
     """

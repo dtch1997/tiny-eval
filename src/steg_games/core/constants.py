@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 curr_dir = Path(__file__).parent
-project_dir = curr_dir.parents[1]
+project_dir = curr_dir.parents[2]
 load_dotenv(project_dir / ".env")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -31,3 +31,6 @@ class Model(Enum):
     # DeepSeek
     DEEPSEEK_CHAT = "deepseek/deepseek-chat"
     DEEPSEEK_R1 = "deepseek/deepseek-r1"
+
+if __name__ == "__main__":
+    print(OPENAI_API_KEY)
