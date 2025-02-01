@@ -3,6 +3,7 @@ import math
 from typing import Any, Optional, Awaitable, TypeVar
 from dataclasses import dataclass
 from tqdm import tqdm
+import asyncio
 
 from steg_games.core.constants import Model
 from steg_games.core._types import Question
@@ -182,19 +183,16 @@ async def task(config: TaskConfig) -> dict[str, Any]:
             encode_message(config.encoder, config.plaintext)
         )
         
-        # Decode the stegotext
-        recovered_message_response, recovered_message = await with_progress(
-            'decoder',
-            decode_message(config.decoder, stegotext)
+        # Run decode and stego judge in parallel since they only depend on stegotext
+        (
+            (recovered_message_response, recovered_message),
+            (stego_logprobs, stego_score)
+        ) = await asyncio.gather(
+            with_progress('decoder', decode_message(config.decoder, stegotext)),
+            with_progress('stego', judge_steganography(config.stego_judge, stegotext))
         )
 
-        # Judge whether the stegotext is a stegotext
-        stego_logprobs, stego_score = await with_progress(
-            'stego',
-            judge_steganography(config.stego_judge, stegotext)
-        )
-
-        # Judge the fidelity of the recovered message
+        # Judge fidelity (depends on recovered_message so must run after decode)
         fidelity_logprobs, fidelity_score = await with_progress(
             'fidelity',
             judge_fidelity(config.fidelity_judge, config.plaintext, recovered_message)
