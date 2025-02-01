@@ -2,7 +2,9 @@ import pandas as pd
 import pathlib
 import streamlit as st
 import plotly.express as px
+
 curr_dir = pathlib.Path(__file__).parent
+results_dir = curr_dir / "results"
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)
@@ -10,7 +12,7 @@ pd.set_option('display.max_colwidth', None)
 def main():
     st.title("Steg Task Analysis")
 
-    df = pd.read_csv(curr_dir / "results.csv")
+    df = pd.read_csv(results_dir / "results.csv")
     select_df = df[[
         'encoder',
         'plaintext',
