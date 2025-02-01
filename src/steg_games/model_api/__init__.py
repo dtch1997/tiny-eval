@@ -1,7 +1,9 @@
 from .base import ModelAPIInterface
-from .openrouter import OpenRouterModelAPI
+from .openai import OpenAIModelAPI
+from .builder import build_model_api
 
 __all__ = [
     "ModelAPIInterface",
-    "OpenRouterModelAPI",
+    "OpenAIModelAPI",
+    "build_model_api",
 ]

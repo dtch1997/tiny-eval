@@ -5,9 +5,7 @@ from textwrap import dedent
 from openai import AsyncOpenAI
 
 from .base import ModelAPIInterface
-from steg_games.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from steg_games.core.types import Message, Choice
-from steg_games.core.constants import Model
 
 def on_backoff(details):
     """We don't print connection error because there's sometimes a lot of them and they're not interesting."""
@@ -30,44 +28,42 @@ def on_backoff(details):
 async def _openai_chat_completion(*, client: AsyncOpenAI, **kwargs):
     return await client.chat.completions.create(**kwargs)
 
-class OpenRouterModelAPI(ModelAPIInterface):
+class OpenAIModelAPI(ModelAPIInterface):
     """
     Model API for OpenRouter.
     """
+    model: str
     client: AsyncOpenAI
 
     def __init__(
-        self, 
+        self,
+        model: str,
         client: AsyncOpenAI | None = None,
     ):
-        self.client = client or AsyncOpenAI(
-            base_url=OPENROUTER_BASE_URL,
-            api_key=OPENROUTER_API_KEY,
-        )
-
+        self.client = client or AsyncOpenAI()
+        self.model = model
+    
     async def get_response(
         self, 
-        messages: list[Message], 
-        model: Model,
+        messages: list[Message],
         # extra options 
         n: int = 1,
         temperature: float = 1.0,
         logprobs: bool = False
     ) -> str:
         choices = await self.get_response_many(
-            messages, 
-            model, 
+            messages,
             n=n,
             temperature=temperature, 
             logprobs=logprobs
         )
         return choices[0].message.content
     
-    async def get_logprobs(self, messages: list[Message], model: Model) -> dict[str, float]:
+    async def get_logprobs(self, messages: list[Message]) -> dict[str, float]:
         """ Get logprobs for the next token. Always samples 1 token."""
         completion = await _openai_chat_completion(
             client=self.client,
-            model=model.value,
+            model=self.model,
             messages=[message.to_dict() for message in messages], # type: ignore
             max_tokens=1,
             temperature=0,
@@ -79,7 +75,7 @@ class OpenRouterModelAPI(ModelAPIInterface):
         except IndexError:
             # This should not happen according to the API docs. But it sometimes does.
             warning = dedent(f"""\
-                Failed to get logprobs because {model} didn't send them.
+                Failed to get logprobs because {self.model} didn't send them.
                 Returning empty dict, I hope you can handle it.
                 Last completion has empty logprobs.content: {completion}.
             """)
@@ -93,8 +89,7 @@ class OpenRouterModelAPI(ModelAPIInterface):
 
     async def get_response_many(
         self, 
-        messages: list[Message], 
-        model: Model,
+        messages: list[Message],
         *,
         # extra options 
         n: int = 1,
@@ -105,7 +100,7 @@ class OpenRouterModelAPI(ModelAPIInterface):
         try: 
             completion = await _openai_chat_completion(
                 client=self.client,
-                model=model.value,
+                model=self.model,
                 messages=[message.to_dict() for message in messages], # type: ignore
                 n=n,
                 temperature=temperature,
