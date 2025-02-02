@@ -6,7 +6,7 @@ import json
 from typing import Any
 from itertools import product
 from tiny_eval.core.constants import Model
-from tiny_eval.tasks.steg import run_task, TaskConfig, init_progress_bars, close_progress_bars
+from task import run_task, TaskConfig, init_progress_bars, close_progress_bars
 from tiny_eval.utils.asyncio import chain, as_awaitable
 
 curr_dir = pathlib.Path(__file__).parent
