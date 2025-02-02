@@ -58,11 +58,11 @@ def build_save_fn(save_path: pathlib.Path):
     return save_result
 
 async def main():
-    replicates = list(range(25))
-    messages = MESSSAGES
+    replicates = list(range(5))
+    messages = MESSSAGES[:5]
     target_models = [
         Model.GPT_4o,
-        Model.O1_mini,
+        # Model.O1_mini,
         # Model.DEEPSEEK_CHAT,
     ]
 

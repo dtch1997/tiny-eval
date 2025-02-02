@@ -8,16 +8,16 @@ from steg_games.core._types import Message
 class RateLimiter(ModelAPIInterface):
     """Rate limits requests to the underlying model API."""
     
-    def __init__(self, api: ModelAPIInterface, requests_per_minute: int):
+    def __init__(self, api: ModelAPIInterface, max_requests_per_minute: int):
         """
         Initialize the rate limiter.
         
         Args:
             api: The underlying ModelAPI implementation
-            requests_per_minute: Maximum number of requests allowed per minute
+            max_requests_per_minute: Maximum number of requests allowed per minute
         """
         self.api = api
-        self.requests_per_minute = requests_per_minute
+        self.max_requests_per_minute = max_requests_per_minute
         self.request_times = deque()
         self.window_size = 60  # 1 minute in seconds
 
@@ -33,7 +33,7 @@ class RateLimiter(ModelAPIInterface):
             self.request_times.popleft()
         
         # If we've hit our limit, wait until we can make another request
-        if len(self.request_times) >= self.requests_per_minute:
+        if len(self.request_times) >= self.max_requests_per_minute:
             wait_time = self.request_times[0] + self.window_size - current_time
             if wait_time > 0:
                 await asyncio.sleep(wait_time)
