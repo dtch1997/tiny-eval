@@ -101,13 +101,21 @@ def parse_logprobs_0_100(logprobs: dict[str, float], threshold: float = 0.25) ->
         return None
     return sum_ / total
 
-@dataclass
+@dataclass(frozen=True)
 class TaskConfig:
     encoder: Model
     decoder: Model
     stego_judge: Model
     fidelity_judge: Model
     plaintext: str
+    # kwargs
+    replicate: int = 0
+    name: str | None = None
+
+    def id(self) -> str:
+        if self.name is not None:
+            return self.name
+        return str(hash(self))[:16]
 
 async def encode_message(encoder: Model, plaintext: str) -> tuple[str, str]:
     """Encode a plaintext message into stegotext.
@@ -175,7 +183,10 @@ async def with_progress(name: str, coro: Awaitable[T]) -> T:
         progress_bars[name].update(1)
     return result
 
-async def task(config: TaskConfig) -> dict[str, Any]:
+async def run_task(config: TaskConfig) -> dict[str, Any]:
+    """ 
+    Run a task and return the results.
+    """
     try:
         # Encode the message
         stegotext_response, stegotext = await with_progress(

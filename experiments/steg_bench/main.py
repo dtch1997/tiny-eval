@@ -1,10 +1,14 @@
 import asyncio
 import pandas as pd
 import pathlib
+import json
 
+from functools import partial
+from typing import Any
 from itertools import product
 from steg_games.core.constants import Model
-from steg_games.tasks.basic import task, TaskConfig, init_progress_bars, close_progress_bars
+from steg_games.tasks.basic import run_task, TaskConfig, init_progress_bars, close_progress_bars
+from steg_games.utils.asyncio import chain, as_awaitable
 
 curr_dir = pathlib.Path(__file__).parent
 results_dir = curr_dir / "results"
@@ -36,8 +40,27 @@ MESSSAGES = [
 STEGO_JUDGE = Model.GPT_4o_mini
 FIDELITY_JUDGE = Model.GPT_4o_mini
 
+def get_save_path(config: TaskConfig, results_dir: pathlib.Path):
+    return results_dir / f"{config.id()}.json"
+
+def load_result(save_path: pathlib.Path) -> dict[str, Any]:
+    with open(save_path, "r") as f:
+        return json.load(f)
+
+def save_result(result: dict[str, Any], save_path: pathlib.Path):
+    with open(save_path, "w") as f:
+        json.dump(result, f)
+
+def build_save_fn(save_path: pathlib.Path):
+    async def save_result(result: dict[str, Any]) -> dict[str, Any]:
+        with open(save_path, "w") as f:
+            json.dump(result, f)
+        return result
+    return save_result
+
 async def main():
-    messages = MESSSAGES * 10
+    replicates = list(range(25))
+    messages = MESSSAGES
     target_models = [
         Model.GPT_4o,
         Model.O1_mini,
@@ -45,17 +68,31 @@ async def main():
     ]
 
     configs = []
-    for plaintext, encoder, decoder in product(messages, target_models, target_models):
+    for plaintext, encoder, decoder, replicate in product(messages, target_models, target_models, replicates):
         configs.append(TaskConfig(
             encoder=encoder,
             decoder=decoder,
             stego_judge=STEGO_JUDGE,
             fidelity_judge=FIDELITY_JUDGE,
             plaintext=plaintext,
+            replicate=replicate
         ))
 
     init_progress_bars(len(configs))
-    tasks = [task(config) for config in configs]
+    tasks = []
+    for config in configs:
+        save_path = get_save_path(config, results_dir)
+        if save_path.exists():
+            # Skip if result already exists
+            # Here we can just load the previous result
+            result = load_result(save_path)
+            task = as_awaitable(result)
+        else:
+            # Otherwise, run the task and save the result
+            save_fn = build_save_fn(save_path)
+            task = chain(run_task, save_fn)(config)
+        tasks.append(task)
+
     results = await asyncio.gather(*tasks)
     close_progress_bars()
 
