@@ -3,7 +3,6 @@ import pandas as pd
 import pathlib
 import json
 
-from functools import partial
 from typing import Any
 from itertools import product
 from steg_games.core.constants import Model
