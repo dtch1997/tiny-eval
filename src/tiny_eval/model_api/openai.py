@@ -43,7 +43,7 @@ class OpenAIModelAPI(ModelAPIInterface):
         self.client = client or AsyncOpenAI()
         self.model = model
     
-    async def get_response(
+    async def _get_response(
         self, 
         messages: list[Message],
         # extra options 
@@ -51,7 +51,7 @@ class OpenAIModelAPI(ModelAPIInterface):
         temperature: float = 1.0,
         logprobs: bool = False
     ) -> str:
-        choices = await self.get_response_many(
+        choices = await self._get_response_many(
             messages,
             n=n,
             temperature=temperature, 
@@ -59,7 +59,7 @@ class OpenAIModelAPI(ModelAPIInterface):
         )
         return choices[0].message.content
     
-    async def get_logprobs(self, messages: list[Message]) -> dict[str, float]:
+    async def _get_logprobs(self, messages: list[Message]) -> dict[str, float]:
         """ Get logprobs for the next token. Always samples 1 token."""
         completion = await _openai_chat_completion(
             client=self.client,
@@ -87,7 +87,7 @@ class OpenAIModelAPI(ModelAPIInterface):
             result[el.token] = float(el.logprob)
         return result
 
-    async def get_response_many(
+    async def _get_response_many(
         self, 
         messages: list[Message],
         *,

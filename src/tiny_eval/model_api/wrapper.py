@@ -42,7 +42,7 @@ class RateLimiter(ModelAPIInterface):
         # Add current request timestamp
         self.request_times.append(current_time)
 
-    async def get_response(self, messages: list[Message], **kwargs) -> str:
+    async def _get_response(self, messages: list[Message], **kwargs) -> str:
         """
         Get a response from the API while respecting rate limits.
         
@@ -56,7 +56,7 @@ class RateLimiter(ModelAPIInterface):
         await self._wait_if_needed()
         return await self.api.get_response(messages, **kwargs)
 
-    async def get_logprobs(self, messages: list[Message]) -> dict[str, float]:
+    async def _get_logprobs(self, messages: list[Message]) -> dict[str, float]:
         """
         Get logprobs from the API while respecting rate limits.
         
