@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from steg_games.utils.asyncio import chain, batch_chain
+from tiny_eval.utils.asyncio import chain, batch_chain
 
 # Helper async functions for testing
 async def add_one(x):

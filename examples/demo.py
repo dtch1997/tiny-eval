@@ -1,6 +1,6 @@
 import asyncio
-from steg_games.core.constants import Model
-from steg_games.model_api import OpenRouterModelAPI
+from tiny_eval.core.constants import Model
+from tiny_eval.model_api import OpenRouterModelAPI
 
 async def main():
     api = OpenRouterModelAPI()

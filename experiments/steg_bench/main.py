@@ -5,9 +5,9 @@ import json
 
 from typing import Any
 from itertools import product
-from steg_games.core.constants import Model
-from steg_games.tasks.basic import run_task, TaskConfig, init_progress_bars, close_progress_bars
-from steg_games.utils.asyncio import chain, as_awaitable
+from tiny_eval.core.constants import Model
+from tiny_eval.tasks.steg import run_task, TaskConfig, init_progress_bars, close_progress_bars
+from tiny_eval.utils.asyncio import chain, as_awaitable
 
 curr_dir = pathlib.Path(__file__).parent
 results_dir = curr_dir / "results"
@@ -58,8 +58,8 @@ def build_save_fn(save_path: pathlib.Path):
     return save_result
 
 async def main():
-    replicates = list(range(5))
-    messages = MESSSAGES[:5]
+    replicates = list(range(25))
+    messages = MESSSAGES
     target_models = [
         Model.GPT_4o,
         # Model.O1_mini,

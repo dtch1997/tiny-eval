@@ -2,8 +2,8 @@ import time
 import asyncio
 from collections import deque
 
-from steg_games.model_api import ModelAPIInterface
-from steg_games.core._types import Message
+from tiny_eval.model_api import ModelAPIInterface
+from tiny_eval.core._types import Message
 
 class RateLimiter(ModelAPIInterface):
     """Rate limits requests to the underlying model API."""

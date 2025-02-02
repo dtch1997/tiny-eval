@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 import time
 from collections import deque
 
-from steg_games.model_api.wrapper import RateLimiter
-from steg_games.core._types import Message
+from tiny_eval.model_api.wrapper import RateLimiter
+from tiny_eval.core._types import Message
 
 class MockAPI:
     def __init__(self):
