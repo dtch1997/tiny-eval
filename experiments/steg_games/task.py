@@ -2,6 +2,7 @@
 import math
 from typing import Any, Optional, Awaitable, TypeVar
 from dataclasses import dataclass
+from functools import wraps
 from tqdm import tqdm
 import asyncio
 
@@ -49,10 +50,14 @@ Respond with a number between 0 and 100. Don't say anything else, just the numbe
 
 # Global progress bars
 progress_bars: dict[str, Optional[tqdm]] = {
-    'encoder': None,
-    'decoder': None, 
-    'stego': None,
-    'fidelity': None
+    'encoder_request': None,
+    'encoder_response': None,
+    'decoder_request': None,
+    'decoder_response': None,
+    'stego_request': None,
+    'stego_response': None,
+    'fidelity_request': None,
+    'fidelity_response': None,
 }
 
 T = TypeVar('T')
@@ -60,10 +65,15 @@ T = TypeVar('T')
 def init_progress_bars(total: int):
     """Initialize global progress bars with given total"""
     global progress_bars
-    progress_bars['encoder'] = tqdm(total=total, desc='Encoding messages    ')
-    progress_bars['decoder'] = tqdm(total=total, desc='Decoding stegotexts  ')
-    progress_bars['stego'] = tqdm(total=total, desc='Judging steganography')
-    progress_bars['fidelity'] = tqdm(total=total, desc='Judging fidelity    ')
+    # Add new progress bars for requests/responses
+    progress_bars['encoder_request'] = tqdm(total=total, desc='Encoder requests    ')
+    progress_bars['encoder_response'] = tqdm(total=total, desc='Encoder responses   ')
+    progress_bars['decoder_request'] = tqdm(total=total, desc='Decoder requests    ')
+    progress_bars['decoder_response'] = tqdm(total=total, desc='Decoder responses   ')
+    progress_bars['stego_request'] = tqdm(total=total, desc='Stego requests     ')
+    progress_bars['stego_response'] = tqdm(total=total, desc='Stego responses    ')
+    progress_bars['fidelity_request'] = tqdm(total=total, desc='Fidelity requests  ')
+    progress_bars['fidelity_response'] = tqdm(total=total, desc='Fidelity responses ')
 
 def close_progress_bars():
     """Close all progress bars"""
@@ -117,6 +127,25 @@ class TaskConfig:
             return self.name
         return str(hash(self))[:16]
 
+def track_progress(start_name: str, end_name: str):
+    """Decorator to track progress of multiple progress bars.
+    
+    Args:
+        *progress_names: Names of the progress bars to update after completion
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            if progress_bars[start_name]:
+                progress_bars[start_name].update(1)
+            result = await func(*args, **kwargs)
+            if progress_bars[end_name]:
+                progress_bars[end_name].update(1)
+            return result
+        return wrapper
+    return decorator
+
+@track_progress('encoder_request', 'encoder_response')
 async def encode_message(encoder: Model, plaintext: str) -> tuple[str, str]:
     """Encode a plaintext message into stegotext.
     
@@ -129,6 +158,7 @@ async def encode_message(encoder: Model, plaintext: str) -> tuple[str, str]:
     stegotext = parse_answer(stegotext_response)
     return stegotext_response, stegotext
 
+@track_progress('decoder_request', 'decoder_response')
 async def decode_message(decoder: Model, stegotext: str) -> tuple[str, str]:
     """Decode a stegotext back into plaintext.
     
@@ -141,6 +171,7 @@ async def decode_message(decoder: Model, stegotext: str) -> tuple[str, str]:
     recovered_message = parse_answer(recovered_message_response)
     return recovered_message_response, recovered_message
 
+@track_progress('stego_request', 'stego_response')
 async def judge_steganography(stego_judge: Model, stegotext: str) -> tuple[dict[str, float], float | None]:
     """Judge whether the text contains a hidden message.
     
@@ -153,6 +184,7 @@ async def judge_steganography(stego_judge: Model, stegotext: str) -> tuple[dict[
     stego_score = parse_logprobs_0_100(stego_logprobs)
     return stego_logprobs, stego_score
 
+@track_progress('fidelity_request', 'fidelity_response')
 async def judge_fidelity(fidelity_judge: Model, plaintext: str, recovered_message: str) -> tuple[dict[str, float], float | None]:
     """Judge how well the recovered message matches the original.
     
@@ -189,24 +221,22 @@ async def run_task(config: TaskConfig) -> dict[str, Any]:
     """
     try:
         # Encode the message
-        stegotext_response, stegotext = await with_progress(
-            'encoder',
-            encode_message(config.encoder, config.plaintext)
-        )
+        stegotext_response, stegotext = await encode_message(config.encoder, config.plaintext)
         
         # Run decode and stego judge in parallel since they only depend on stegotext
         (
             (recovered_message_response, recovered_message),
             (stego_logprobs, stego_score)
         ) = await asyncio.gather(
-            with_progress('decoder', decode_message(config.decoder, stegotext)),
-            with_progress('stego', judge_steganography(config.stego_judge, stegotext))
+            decode_message(config.decoder, stegotext),
+            judge_steganography(config.stego_judge, stegotext)
         )
 
         # Judge fidelity (depends on recovered_message so must run after decode)
-        fidelity_logprobs, fidelity_score = await with_progress(
-            'fidelity',
-            judge_fidelity(config.fidelity_judge, config.plaintext, recovered_message)
+        fidelity_logprobs, fidelity_score = await judge_fidelity(
+            config.fidelity_judge, 
+            config.plaintext, 
+            recovered_message
         )
 
         return {

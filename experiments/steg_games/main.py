@@ -58,19 +58,21 @@ def build_save_fn(save_path: pathlib.Path):
     return save_result
 
 async def main():
-    replicates = list(range(25))
+    replicates = list(range(10))
     messages = MESSSAGES
     target_models = [
         Model.GPT_4o,
-        # Model.O1_mini,
+        Model.O1,
+        Model.O1_mini,
+        # Model.O3_mini,
         # Model.DEEPSEEK_CHAT,
     ]
 
     configs = []
-    for plaintext, encoder, decoder, replicate in product(messages, target_models, target_models, replicates):
+    for plaintext, target_model, replicate in product(messages, target_models, replicates):
         configs.append(TaskConfig(
-            encoder=encoder,
-            decoder=decoder,
+            encoder=target_model,
+            decoder=target_model,
             stego_judge=STEGO_JUDGE,
             fidelity_judge=FIDELITY_JUDGE,
             plaintext=plaintext,
