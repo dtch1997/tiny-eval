@@ -5,7 +5,7 @@ description = "TinyEval: A tiny evaluation framework for language models"
 authors = [
     {name = "Daniel Tan", email = "dtch1997@users.noreply.github.com"},
 ]
-dependencies = ["openrouter>=1.0", "python-dotenv>=1.0.1", "openai>=1.60.1", "ipykernel>=6.29.5", "backoff>=2.2.1"]
+dependencies = ["openrouter>=1.0", "python-dotenv>=1.0.1", "openai>=1.60.1", "ipykernel>=6.29.5", "backoff>=2.2.1", "fireworks-ai>=0.15.12"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "MIT"}
