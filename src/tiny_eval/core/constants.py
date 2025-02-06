@@ -31,6 +31,8 @@ class Model(Enum):
     # DeepSeek
     DEEPSEEK_CHAT = "deepseek/deepseek-chat"
     DEEPSEEK_R1 = "deepseek/deepseek-r1"
+    # Dolphin
+    DOLPHIN = "cognitivecomputations/dolphin-mixtral-8x22b"
 
 if __name__ == "__main__":
     print(OPENAI_API_KEY)
