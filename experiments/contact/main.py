@@ -1,10 +1,11 @@
 import asyncio
 import pandas as pd
 import pathlib
+from tqdm.asyncio import tqdm_asyncio
 
 from itertools import product
 from tiny_eval.core.constants import Model
-from task import run_task, TaskConfig, init_progress_bars, close_progress_bars
+from task import run_task, TaskConfig
 
 pd.set_option('display.max_colwidth', None)
 
@@ -25,7 +26,7 @@ WORDS = [
 
 async def main():
     # Configure experiment parameters
-    replicates = range(1)  # Reduce replicates since we're using more expensive models
+    replicates = range(3)  # Reduce replicates since we're using more expensive models
     models = [
         Model.GPT_4o,  # More capable model for complex reasoning
         # Model.GPT_4o_mini,  # Good balance of capability and cost
@@ -41,18 +42,10 @@ async def main():
             secret_word=word,
             name=f"{model.value}_{word}_{replicate}"
         ))
-
-    # Initialize progress tracking
-    init_progress_bars(len(configs))
     
-    # Run tasks
-    tasks = []
-    for config in configs:
-        tasks.append(run_task(config))
-
-    # Gather results
-    results = await asyncio.gather(*tasks)
-    close_progress_bars()
+    # Run tasks with progress bar
+    tasks = [run_task(config) for config in configs]
+    results = await tqdm_asyncio.gather(*tasks, desc="Running games")
 
     # Save combined results
     df = pd.DataFrame(results)
