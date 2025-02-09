@@ -100,7 +100,7 @@ def display_conversation_page(filtered_df: pd.DataFrame, page_idx: int):
     with col1:
         if st.button("← Previous", key="prev", disabled=page_idx == 0):
             st.session_state.page_idx = max(0, page_idx - 1)
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         st.write(f"Conversation {page_idx + 1} of {len(filtered_df)}")
@@ -108,7 +108,7 @@ def display_conversation_page(filtered_df: pd.DataFrame, page_idx: int):
     with col3:
         if st.button("Next →", key="next", disabled=page_idx == len(filtered_df) - 1):
             st.session_state.page_idx = min(len(filtered_df) - 1, page_idx + 1)
-            st.experimental_rerun()
+            st.rerun()
     
     # Display conversation details
     st.markdown(f"### Game {row.name}")
@@ -118,10 +118,26 @@ def display_conversation_page(filtered_df: pd.DataFrame, page_idx: int):
     
     # Display conversation
     st.markdown("### Conversation")
-    st.markdown(format_conversation(
-        row['conversation'], 
-        row.get('full_interactions', None)
-    ))
+    
+    # Add toggle for detailed view
+    show_details = st.checkbox("Show detailed interactions", key=f"details_{page_idx}")
+    
+    if show_details:
+        st.markdown(format_conversation(
+            row['conversation'], 
+            row.get('full_interactions', None)
+        ))
+    else:
+        # Show just the basic conversation without detailed interactions
+        if isinstance(row['conversation'], str):
+            conversation = eval(row['conversation'])
+        else:
+            conversation = row['conversation']
+        
+        for line in conversation:
+            speaker = line.split(":")[0].strip()
+            message = ":".join(line.split(":")[1:]).strip()
+            st.markdown(f"**{speaker}**: {message}")
     
     if row['contact_declared']:
         st.markdown("### Final Guesses")

@@ -26,23 +26,23 @@ WORDS = [
 
 async def main():
     # Configure experiment parameters
-    replicates = range(3)  # Reduce replicates since we're using more expensive models
-    models = [
-        Model.GPT_4o,  # More capable model for complex reasoning
-        # Model.GPT_4o_mini,  # Good balance of capability and cost
-    ]
+    replicates = range(3)  # Reduce replicates since we're using expensive models
+    
+    # Use GPT-4o for players and GPT-4o-mini for overseer
+    player_model = Model.GPT_4o
+    overseer_model = Model.GPT_4o_mini
     
     # Generate all configurations
     configs = []
-    for word, model, replicate in product(WORDS, models, replicates):
+    for word, replicate in product(WORDS, replicates):
         configs.append(TaskConfig(
-            alice=model,
-            bob=model,
-            dean=model,
+            alice=player_model,  # More capable model for players
+            bob=player_model,    # Same model for both players
+            dean=overseer_model, # Less capable model for overseer
             secret_word=word,
-            name=f"{model.value}_{word}_{replicate}"
+            name=f"players_{player_model.value}_overseer_{overseer_model.value}_{word}_{replicate}"
         ))
-    
+
     # Run tasks with progress bar
     tasks = [run_task(config) for config in configs]
     results = await tqdm_asyncio.gather(*tasks, desc="Running games")
