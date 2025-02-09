@@ -11,7 +11,7 @@ from tiny_eval.core.messages import Message, MessageRole
 class MockAPI:
     def __init__(self):
         self.call_times = deque()
-        self._get_response = AsyncMock(return_value=InferenceResponse(
+        self._mock = AsyncMock(return_value=InferenceResponse(
             model="test-model",
             choices=[InferenceChoice(
                 stop_reason=StopReason.STOP_SEQUENCE,
@@ -21,6 +21,16 @@ class MockAPI:
             completion_tokens=10,
             total_tokens=20
         ))
+
+    async def __call__(self, *args, **kwargs):
+        return await self._mock(*args, **kwargs)
+
+    @property
+    def call_count(self):
+        return self._mock.call_count
+
+    def reset_mock(self):
+        self._mock.reset_mock()
 
 @pytest.fixture
 def mock_api():
@@ -50,9 +60,9 @@ async def test_basic_rate_limiting():
     
     # Make 3 requests - the third should be delayed
     await asyncio.gather(
-        rate_limiter._get_response(make_test_prompt("test1"), make_test_params()),
-        rate_limiter._get_response(make_test_prompt("test2"), make_test_params()),
-        rate_limiter._get_response(make_test_prompt("test3"), make_test_params())
+        rate_limiter(make_test_prompt("test1"), make_test_params()),
+        rate_limiter(make_test_prompt("test2"), make_test_params()),
+        rate_limiter(make_test_prompt("test3"), make_test_params())
     )
     
     elapsed_time = time.time() - start_time
@@ -66,7 +76,7 @@ async def test_concurrent_requests():
     
     # Create 20 concurrent requests
     requests = [
-        rate_limiter._get_response(make_test_prompt(f"test{i}"), make_test_params())
+        rate_limiter(make_test_prompt(f"test{i}"), make_test_params())
         for i in range(20)
     ]
     
@@ -76,7 +86,7 @@ async def test_concurrent_requests():
     
     # Should take at least 1 period to process all requests
     assert elapsed_time >= PERIOD_LENGTH
-    assert mock_api._get_response.call_count == 20
+    assert mock_api.call_count == 20
 
 @pytest.mark.asyncio
 async def test_window_sliding():
@@ -86,8 +96,8 @@ async def test_window_sliding():
     
     # Make 2 requests
     await asyncio.gather(
-        rate_limiter._get_response(make_test_prompt("test1"), make_test_params()),
-        rate_limiter._get_response(make_test_prompt("test2"), make_test_params())
+        rate_limiter(make_test_prompt("test1"), make_test_params()),
+        rate_limiter(make_test_prompt("test2"), make_test_params())
     )
     
     # Wait 2 periods for window to slide
@@ -96,8 +106,8 @@ async def test_window_sliding():
     # Should be able to make 2 more requests without waiting
     start_time = time.time()
     await asyncio.gather(
-        rate_limiter._get_response(make_test_prompt("test3"), make_test_params()),
-        rate_limiter._get_response(make_test_prompt("test4"), make_test_params())
+        rate_limiter(make_test_prompt("test3"), make_test_params()),
+        rate_limiter(make_test_prompt("test4"), make_test_params())
     )
     
     elapsed_time = time.time() - start_time

@@ -30,8 +30,3 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
-
-[tool.pytest.ini_options]
-markers = [
-    "integration: marks tests as integration tests",
-]

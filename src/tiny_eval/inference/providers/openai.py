@@ -67,7 +67,7 @@ async def _openai_chat_completion(
 
 class OpenAIInferenceAPI(InferenceAPIInterface):
     """
-    Model API for OpenRouter.
+    Model API for OpenAI.
     """
     model: str
     client: AsyncOpenAI
@@ -80,7 +80,7 @@ class OpenAIInferenceAPI(InferenceAPIInterface):
         self.model = model
         self.client = client or AsyncOpenAI()
     
-    async def _get_response(
+    async def __call__(
         self, 
         prompt: InferencePrompt,
         params: InferenceParams,

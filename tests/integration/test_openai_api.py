@@ -51,7 +51,7 @@ async def test_openai_api_response(
     sample_params: InferenceParams
 ):
     """Test that OpenAIInferenceAPI can make successful API calls."""
-    response = await api._get_response(sample_prompt, sample_params)
+    response = await api(sample_prompt, sample_params)
     
     # Verify response structure
     assert response.model.startswith("gpt-3.5-turbo")
@@ -71,4 +71,4 @@ async def test_openai_api_error_handling(
     invalid_params = InferenceParams(temperature=2.5)  # Temperature > 2.0 is invalid
     
     with pytest.raises(Exception):
-        await api._get_response(sample_prompt, invalid_params) 
+        await api(sample_prompt, invalid_params) 

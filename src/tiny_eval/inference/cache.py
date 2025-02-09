@@ -97,7 +97,7 @@ class InferenceCache(InferenceAPIInterface):
         }
         self.cache_path.write_text(json.dumps(cache_data, indent=2))
 
-    async def _get_response(self, prompt: InferencePrompt, params: InferenceParams) -> InferenceResponse:
+    async def __call__(self, prompt: InferencePrompt, params: InferenceParams) -> InferenceResponse:
         """Get response for a prompt+params combination, using cache if available.
         
         Args:
@@ -116,6 +116,6 @@ class InferenceCache(InferenceAPIInterface):
         if cache_key in self._cache:
             return self._cache[cache_key]
             
-        response = await self.api._get_response(prompt, params)
+        response = await self.api(prompt, params)  # Changed from _get_response to direct call
         self._cache[cache_key] = response
         return response

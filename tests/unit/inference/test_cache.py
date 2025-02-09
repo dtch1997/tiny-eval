@@ -12,7 +12,10 @@ from tiny_eval.core.messages import Message, MessageRole
 
 @pytest.fixture
 def mock_api():
+    # Create a mock that can be called directly
     api = AsyncMock(spec=InferenceAPIInterface)
+    # Configure the mock's __call__ behavior
+    api.return_value = None  # Will be overridden in tests
     return api
 
 @pytest.fixture
@@ -56,61 +59,61 @@ def temp_cache_dir():
 @pytest.mark.asyncio
 async def test_cache_miss(cache, mock_api, sample_prompt, sample_params, sample_response):
     """Test that cache miss calls the underlying API"""
-    mock_api._get_response.return_value = sample_response
+    mock_api.return_value = sample_response
     
-    result = await cache._get_response(sample_prompt, sample_params)
+    result = await cache(sample_prompt, sample_params)
     
     assert result == sample_response
-    mock_api._get_response.assert_called_once_with(sample_prompt, sample_params)
+    mock_api.assert_called_once_with(sample_prompt, sample_params)
 
 @pytest.mark.asyncio
 async def test_cache_hit(cache, mock_api, sample_prompt, sample_params, sample_response):
     """Test that cache hit returns cached response without calling API"""
-    mock_api._get_response.return_value = sample_response
+    mock_api.return_value = sample_response
     
     # First call to populate cache
-    await cache._get_response(sample_prompt, sample_params)
-    mock_api._get_response.reset_mock()
+    await cache(sample_prompt, sample_params)
+    mock_api.reset_mock()
     
     # Second call should use cache
-    result = await cache._get_response(sample_prompt, sample_params)
+    result = await cache(sample_prompt, sample_params)
     
     assert result == sample_response
-    mock_api._get_response.assert_not_called()
+    mock_api.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_different_params_different_cache(
     cache, mock_api, sample_prompt, sample_params, sample_response
 ):
     """Test that different params result in different cache entries"""
-    mock_api._get_response.return_value = sample_response
+    mock_api.return_value = sample_response
     different_params = InferenceParams(temperature=0.8, max_completion_tokens=100)
     
     # Call with first params
-    await cache._get_response(sample_prompt, sample_params)
-    mock_api._get_response.reset_mock()
+    await cache(sample_prompt, sample_params)
+    mock_api.reset_mock()
     
     # Call with different params should miss cache
-    await cache._get_response(sample_prompt, different_params)
+    await cache(sample_prompt, different_params)
     
-    mock_api._get_response.assert_called_once_with(sample_prompt, different_params)
+    mock_api.assert_called_once_with(sample_prompt, different_params)
 
 @pytest.mark.asyncio
 async def test_different_prompts_different_cache(
     cache, mock_api, sample_prompt, sample_params, sample_response
 ):
     """Test that different prompts result in different cache entries"""
-    mock_api._get_response.return_value = sample_response
+    mock_api.return_value = sample_response
     different_prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content="different prompt")])
     
     # Call with first prompt
-    await cache._get_response(sample_prompt, sample_params)
-    mock_api._get_response.reset_mock()
+    await cache(sample_prompt, sample_params)
+    mock_api.reset_mock()
     
     # Call with different prompt should miss cache
-    await cache._get_response(different_prompt, sample_params)
+    await cache(different_prompt, sample_params)
     
-    mock_api._get_response.assert_called_once_with(different_prompt, sample_params)
+    mock_api.assert_called_once_with(different_prompt, sample_params)
 
 @pytest.mark.asyncio
 async def test_cache_persistence(
@@ -118,9 +121,9 @@ async def test_cache_persistence(
 ):
     """Test that cache is saved to and loaded from disk."""
     # Create first cache instance and make a call
-    mock_api._get_response.return_value = sample_response
+    mock_api.return_value = sample_response
     cache1 = InferenceCache(api=mock_api, cache_dir=temp_cache_dir)
-    await cache1._get_response(sample_prompt, sample_params)
+    await cache1(sample_prompt, sample_params)
     
     # Force save
     cache1.save_cache()
@@ -132,12 +135,12 @@ async def test_cache_persistence(
     
     # Create new cache instance - should load from disk
     cache2 = InferenceCache(api=mock_api, cache_dir=temp_cache_dir)
-    mock_api._get_response.reset_mock()
+    mock_api.reset_mock()
     
     # Make same request - should use cached value
-    result = await cache2._get_response(sample_prompt, sample_params)
+    result = await cache2(sample_prompt, sample_params)
     assert result == sample_response
-    mock_api._get_response.assert_not_called()
+    mock_api.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_invalid_cache_file(mock_api, temp_cache_dir):

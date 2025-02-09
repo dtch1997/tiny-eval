@@ -41,6 +41,15 @@ class RateLimiter(InferenceAPIInterface):
         # Add current request timestamp
         self.request_times.append(current_time)
 
-    async def _get_response(self, *args, **kwargs) -> str:
+    async def __call__(self, *args, **kwargs) -> str:
+        """Make a rate-limited API call.
+        
+        Args:
+            *args: Positional arguments to pass to the underlying API
+            **kwargs: Keyword arguments to pass to the underlying API
+            
+        Returns:
+            The API response
+        """
         await self._wait_if_needed()
-        return await self.api._get_response(*args, **kwargs)
+        return await self.api(*args, **kwargs)
