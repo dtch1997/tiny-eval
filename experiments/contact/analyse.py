@@ -198,6 +198,15 @@ def display_conversation_page(filtered_df: pd.DataFrame, page_idx: int):
     
     # Display conversation details
     st.markdown(f"### Game {row.name}")
+    
+    # Display model information using the direct fields
+    st.markdown(f"""
+    **Models**:
+    - Alice: {row['alice_model']}
+    - Bob: {row['bob_model']}
+    - Dean (Overseer): {row['dean_model']}
+    """)
+    
     st.markdown(f"**Winner**: {row['winner']} | **Turns**: {row['turns']} | **Secret Word**: {row['secret_word']}")
     
     # Display conversation
