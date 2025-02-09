@@ -67,27 +67,27 @@ async def _openai_chat_completion(
 
 class OpenAIInferenceAPI(InferenceAPIInterface):
     """
-    Model API for OpenAI.
+    Inference API for OpenAI with rate limiting
     """
-    model: str
+    # TODO: support multiple clients
     client: AsyncOpenAI
 
     def __init__(
         self,
-        model: str,
         client: AsyncOpenAI | None = None,
     ):
-        self.model = model
         self.client = client or AsyncOpenAI()
     
     async def __call__(
         self, 
+        model: str,
         prompt: InferencePrompt,
         params: InferenceParams,
     ) -> InferenceResponse:
+
         return await _openai_chat_completion(
             client=self.client,
-            model=self.model,
+            model=model,
             prompt=prompt,
             params=params,
         )
