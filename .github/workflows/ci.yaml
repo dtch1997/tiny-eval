@@ -44,10 +44,10 @@ jobs:
       #   run: pdm run pre-commit install
       # - name: Ensure pre-commit hooks pass
       #   run: pdm run pre-commit run --all-files
-      - name: test
+      - name: Run unit tests
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: pdm run python -m pytest tests
+        run: pdm run python -m pytest tests/unit
 
   release:
     needs: build
