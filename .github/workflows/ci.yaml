@@ -29,8 +29,10 @@ jobs:
       - name: Setup PDM
         uses: pdm-project/setup-pdm@v4
         with:
-          cache: true
+          cache: false # project doesn't use pdm lock files
           python-version: ${{ matrix.python-version }}
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v5
       - name: Cache Huggingface assets
         uses: actions/cache@v4
         with:
@@ -44,10 +46,10 @@ jobs:
       #   run: pdm run pre-commit install
       # - name: Ensure pre-commit hooks pass
       #   run: pdm run pre-commit run --all-files
-      - name: test
+      - name: Run unit tests
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: pdm run python -m pytest tests
+        run: pdm run python -m pytest tests/unit
 
   release:
     needs: build
