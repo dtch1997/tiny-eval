@@ -6,7 +6,7 @@ import tempfile
 import shutil
 
 from tiny_eval.inference.cache import InferenceCache
-from tiny_eval.inference.types import InferencePrompt, InferenceParams, InferenceResponse
+from tiny_eval.inference.types import InferencePrompt, InferenceParams, InferenceResponse, StopReason
 from tiny_eval.inference.interface import InferenceAPIInterface
 from tiny_eval.core.messages import Message, MessageRole
 
@@ -32,19 +32,19 @@ def sample_params():
 
 @pytest.fixture
 def sample_response():
-    return [InferenceResponse(
+    return InferenceResponse(
         model="test-model",
         choices=[{
             "message": {
                 "role": "assistant",
                 "content": "test response"
             },
-            "stop_reason": "stop"
+            "stop_reason": StopReason.STOP_SEQUENCE
         }],
         prompt_tokens=10,
         completion_tokens=5,
         total_tokens=15
-    )]
+    )
 
 @pytest.fixture
 def temp_cache_dir():
@@ -117,23 +117,21 @@ async def test_cache_persistence(
     mock_api, sample_prompt, sample_params, sample_response, temp_cache_dir
 ):
     """Test that cache is saved to and loaded from disk."""
-    cache_path = temp_cache_dir / "cache.json"
-    
     # Create first cache instance and make a call
     mock_api._get_response.return_value = sample_response
-    cache1 = InferenceCache(api=mock_api, cache_path=cache_path)
+    cache1 = InferenceCache(api=mock_api, cache_dir=temp_cache_dir)
     await cache1._get_response(sample_prompt, sample_params)
     
     # Force save
     cache1.save_cache()
     
     # Verify cache file exists and contains expected data
-    assert cache_path.exists()
-    cache_data = json.loads(cache_path.read_text())
+    assert cache1.cache_path.exists()
+    cache_data = json.loads(cache1.cache_path.read_text())
     assert len(cache_data) == 1
     
     # Create new cache instance - should load from disk
-    cache2 = InferenceCache(api=mock_api, cache_path=cache_path)
+    cache2 = InferenceCache(api=mock_api, cache_dir=temp_cache_dir)
     mock_api._get_response.reset_mock()
     
     # Make same request - should use cached value
@@ -144,13 +142,13 @@ async def test_cache_persistence(
 @pytest.mark.asyncio
 async def test_invalid_cache_file(mock_api, temp_cache_dir):
     """Test that invalid cache file is handled gracefully."""
-    cache_path = temp_cache_dir / "cache.json"
+    cache_path = temp_cache_dir / "inference_cache.json"
     
     # Write invalid JSON
     cache_path.write_text("invalid json")
     
     # Should not raise error, should start with empty cache
-    cache = InferenceCache(api=mock_api, cache_path=cache_path)
+    cache = InferenceCache(api=mock_api, cache_dir=temp_cache_dir)
     assert len(cache._cache) == 0
 
 def test_default_cache_path(mock_api):

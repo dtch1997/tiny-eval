@@ -84,7 +84,7 @@ class InferenceParams(HashableBaseModel):
         return v
 
 
-class StopReason(Enum):
+class StopReason(str, Enum):
     MAX_TOKENS = "max_tokens"
     STOP_SEQUENCE = "stop_sequence"
     CONTENT_FILTER = "content_filter"
@@ -108,7 +108,7 @@ class InferenceChoice(pydantic.BaseModel):
 
         if v in ["length"]:
             return StopReason.MAX_TOKENS
-        elif v in ["stop"]:
+        elif v in ["stop", "stop_sequence"]:
             return StopReason.STOP_SEQUENCE
         elif v in ["content_filter"]:
             return StopReason.CONTENT_FILTER
