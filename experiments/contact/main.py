@@ -6,14 +6,13 @@ from itertools import product
 from tiny_eval.core.constants import Model
 from words import get_random_subset
 from tiny_eval.task.contact import ContactTask, ContactTaskConfig
-from pathlib import Path
 
 pd.set_option('display.max_colwidth', None)
 
 curr_dir = pathlib.Path(__file__).parent
 results_dir = curr_dir / "results"
 results_dir.mkdir(parents=True, exist_ok=True)
-cache_dir = results_dir / "cache"
+cache_dir = curr_dir / "cache"
 cache_dir.mkdir(parents=True, exist_ok=True)
 
 async def main():

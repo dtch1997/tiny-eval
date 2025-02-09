@@ -4,7 +4,7 @@ import hashlib
 
 from .base import Task, BaseTaskConfig
 from tiny_eval.core.constants import Model
-from tiny_eval.inference import build_inference_api, get_response
+from tiny_eval.inference import get_response
 from tiny_eval.inference.types import InferencePrompt
 from tiny_eval.core.messages import Message
 
@@ -132,7 +132,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
             except IndexError:
                 return response.strip()
 
-    async def get_final_guesses(self, bob_api: Any, dean_api: Any, 
+    async def get_final_guesses(self, bob_model: str, dean_model: str, 
                               conversation: List[str]) -> tuple[str, str]:
         """Get final guesses from Bob and Dean"""
         bob_prompt = self.build_prompt(
@@ -140,14 +140,14 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
             conversation=conversation,
             user_message=self.FINAL_GUESS_PROMPT
         )
-        bob_response = await get_response(bob_api, bob_prompt)
+        bob_response = await get_response(bob_model, bob_prompt)
         bob_guess = self.extract_message(bob_response)
         
         dean_prompt = self.build_prompt(
             system=self.OVERSEER_PROMPT,
             conversation=conversation
         )
-        dean_response = await get_response(dean_api, dean_prompt)
+        dean_response = await get_response(dean_model, dean_prompt)
         dean_guess = self.extract_message(dean_response)
         
         return bob_guess, dean_guess
@@ -155,11 +155,6 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
     async def run_single(self, config: ContactTaskConfig) -> Dict[str, Any]:
         """Run a single instance of the Contact task"""
         try:
-            # Initialize APIs
-            alice_api = build_inference_api(config.alice)
-            bob_api = build_inference_api(config.bob)
-            dean_api = build_inference_api(config.dean)
-            
             conversation: List[str] = []
             full_interactions = {
                 "player_1": [],
@@ -172,7 +167,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                 system=self.PLAYER_1_PROMPT.format(secret_word=config.secret_word),
                 user_message="Please start the game by sending your first message."
             )
-            alice_response = await get_response(alice_api, alice_prompt)
+            alice_response = await get_response(config.alice, alice_prompt)
             alice_msg = self.extract_message(alice_response)
             
             full_interactions["player_1"].append({
@@ -194,7 +189,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                     system=self.PLAYER_2_PROMPT,
                     conversation=conversation
                 )
-                bob_response = await get_response(bob_api, bob_prompt)
+                bob_response = await get_response(config.bob, bob_prompt)
                 bob_msg = self.extract_message(bob_response)
                 
                 # Record Bob's interaction
@@ -209,7 +204,11 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                 
                 # Check for contact
                 if "contact" in bob_msg.lower():
-                    bob_guess, dean_guess = await self.get_final_guesses(bob_api, dean_api, conversation)
+                    bob_guess, dean_guess = await self.get_final_guesses(
+                        config.bob.value, 
+                        config.dean.value, 
+                        conversation
+                    )
                     
                     # Record final guesses
                     full_interactions["player_2"].append({
@@ -251,7 +250,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                     system=self.PLAYER_1_PROMPT.format(secret_word=config.secret_word),
                     conversation=conversation
                 )
-                alice_response = await get_response(alice_api, alice_prompt)
+                alice_response = await get_response(config.alice, alice_prompt)
                 alice_msg = self.extract_message(alice_response)
                 
                 # Record Alice's interaction
