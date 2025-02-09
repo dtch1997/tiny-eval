@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import time
 from collections import deque
 
-from tiny_eval.model_api.wrapper import RateLimiter
+from tiny_eval.inference.rate_limiter import RateLimiter
 from tiny_eval.core._types import Message
 
 class MockAPI:

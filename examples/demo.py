@@ -1,6 +1,6 @@
 import asyncio
 from tiny_eval.core.constants import Model
-from tiny_eval.model_api import build_model_api
+from tiny_eval.inference import build_model_api
 
 async def main():
     model = Model.GPT_4o_mini

@@ -2,13 +2,12 @@ import time
 import asyncio
 from collections import deque
 
-from tiny_eval.model_api import ModelAPIInterface
-from tiny_eval.core._types import Message
+from tiny_eval.inference.interface import InferenceAPIInterface
 
-class RateLimiter(ModelAPIInterface):
+class RateLimiter(InferenceAPIInterface):
     """Rate limits requests to the underlying model API."""
     
-    def __init__(self, api: ModelAPIInterface, max_requests_per_period: int, period_length: float):
+    def __init__(self, api: InferenceAPIInterface, max_requests_per_period: int, period_length: float):
         """
         Initialize the rate limiter.
         
@@ -42,29 +41,6 @@ class RateLimiter(ModelAPIInterface):
         # Add current request timestamp
         self.request_times.append(current_time)
 
-    async def _get_response(self, messages: list[Message], **kwargs) -> str:
-        """
-        Get a response from the API while respecting rate limits.
-        
-        Args:
-            messages: List of messages to send to the API
-            **kwargs: Additional arguments to pass to the underlying API
-        
-        Returns:
-            The API response
-        """
+    async def _get_response(self, *args, **kwargs) -> str:
         await self._wait_if_needed()
-        return await self.api.get_response(messages, **kwargs)
-
-    async def _get_logprobs(self, messages: list[Message]) -> dict[str, float]:
-        """
-        Get logprobs from the API while respecting rate limits.
-        
-        Args:
-            messages: List of messages to get logprobs for
-        
-        Returns:
-            Dictionary of token to logprob mappings
-        """
-        await self._wait_if_needed()
-        return await self.api.get_logprobs(messages)
+        return await self.api._get_response(*args, **kwargs)

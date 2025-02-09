@@ -11,7 +11,7 @@ from pathlib import Path
 
 from tiny_eval.core.constants import Model
 from tiny_eval.core._types import Question, Message
-from tiny_eval.model_api import build_model_api
+from tiny_eval.inference import build_model_api
 from tiny_eval.utils.jsonl import read_jsonl
 
 SYSTEM_PROMPT_WITH_NUDGE = r"""
