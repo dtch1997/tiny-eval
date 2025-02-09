@@ -40,9 +40,9 @@ async def get_response(
     Returns:
         The response content as a string
     """
+    api = build_inference_api(model)
     if isinstance(prompt, str):
         prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])
     params = params or InferenceParams()
-    api = build_inference_api(model)
     response = await api(model, prompt, params)
     return response.choices[0].message.content

@@ -84,6 +84,9 @@ class OpenAIInferenceAPI(InferenceAPIInterface):
         prompt: InferencePrompt,
         params: InferenceParams,
     ) -> InferenceResponse:
+        
+        if model.startswith("openai/"):
+            model = model.replace("openai/", "")
 
         return await _openai_chat_completion(
             client=self.client,

@@ -1,8 +1,7 @@
 import pytest
 from openai import AsyncOpenAI
-from typing import AsyncGenerator
 
-from tiny_eval.inference.providers.openai import OpenAIInferenceAPI
+from tiny_eval.inference.openai.api import OpenAIInferenceAPI
 from tiny_eval.inference.types import InferencePrompt, InferenceParams
 from tiny_eval.core.messages import Message, MessageRole
 
@@ -15,7 +14,6 @@ def openai_client() -> AsyncOpenAI:
 def api(openai_client: AsyncOpenAI) -> OpenAIInferenceAPI:
     """Create an OpenAIInferenceAPI instance for testing."""
     return OpenAIInferenceAPI(
-        model="gpt-3.5-turbo",
         client=openai_client
     )
 
@@ -34,24 +32,28 @@ def sample_params() -> InferenceParams:
         max_completion_tokens=100
     )
 
+@pytest.fixture
+def model() -> str:
+    """Create a sample model name for testing."""
+    return "gpt-3.5-turbo"
+
 @pytest.mark.asyncio
 async def test_openai_api_initialization(openai_client: AsyncOpenAI):
     """Test that OpenAIInferenceAPI can be initialized correctly."""
     api = OpenAIInferenceAPI(
-        model="gpt-3.5-turbo",
         client=openai_client
     )
-    assert api.model == "gpt-3.5-turbo"
     assert api.client == openai_client
 
 @pytest.mark.asyncio
 async def test_openai_api_response(
     api: OpenAIInferenceAPI,
+    model: str,
     sample_prompt: InferencePrompt,
     sample_params: InferenceParams
 ):
     """Test that OpenAIInferenceAPI can make successful API calls."""
-    response = await api(sample_prompt, sample_params)
+    response = await api(model, sample_prompt, sample_params)
     
     # Verify response structure
     assert response.model.startswith("gpt-3.5-turbo")
@@ -65,10 +67,11 @@ async def test_openai_api_response(
 @pytest.mark.asyncio
 async def test_openai_api_error_handling(
     api: OpenAIInferenceAPI,
+    model: str,
     sample_prompt: InferencePrompt
 ):
     """Test that OpenAIInferenceAPI handles invalid parameters appropriately."""
     invalid_params = InferenceParams(temperature=2.5)  # Temperature > 2.0 is invalid
     
     with pytest.raises(Exception):
-        await api(sample_prompt, invalid_params) 
+        await api(model, sample_prompt, invalid_params) 
