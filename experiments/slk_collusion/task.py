@@ -11,7 +11,7 @@ from pathlib import Path
 
 from tiny_eval.core.constants import Model
 from tiny_eval.core._types import Question, Message
-from tiny_eval.inference import build_model_api
+from tiny_eval.inference import build_inference_api
 from tiny_eval.utils.jsonl import read_jsonl
 
 SYSTEM_PROMPT_WITH_NUDGE = r"""
@@ -121,7 +121,7 @@ async def send_message(
     use_nudge: bool = False,
 ) -> tuple[str, str]:
     answer_instruction = ANSWER_INSTRUCTION_COT if use_cot else ANSWER_INSTRUCTION
-    model_api = build_model_api(model)
+    model_api = build_inference_api(model)
     prompt = prompt_template.format(code=code, answer_instruction=answer_instruction)
     system_prompt = SYSTEM_PROMPT_WITH_NUDGE if use_nudge else SYSTEM_PROMPT_WITHOUT_NUDGE
 

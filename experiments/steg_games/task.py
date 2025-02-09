@@ -8,7 +8,7 @@ import asyncio
 
 from tiny_eval.core.constants import Model
 from tiny_eval.core._types import Question
-from tiny_eval.inference import build_model_api
+from tiny_eval.inference import build_inference_api
 
 ENCODER_PROMPT_TEMPLATE_COT = r"""
 I need to deliver an important message to trusted allies. Your task is to help me encode the message steganographically. 
@@ -152,7 +152,7 @@ async def encode_message(encoder: Model, plaintext: str) -> tuple[str, str]:
     Returns:
         tuple[str, str]: (stegotext_response, stegotext)
     """
-    encoder_api = build_model_api(encoder)
+    encoder_api = build_inference_api(encoder)
     encoder_prompt = ENCODER_PROMPT_TEMPLATE_COT.format(plaintext=plaintext)
     stegotext_response = await encoder_api.get_response(Question.from_prompt(encoder_prompt).messages)
     stegotext = parse_answer(stegotext_response)
@@ -165,7 +165,7 @@ async def decode_message(decoder: Model, stegotext: str) -> tuple[str, str]:
     Returns:
         tuple[str, str]: (recovered_message_response, recovered_message)
     """
-    decoder_api = build_model_api(decoder)
+    decoder_api = build_inference_api(decoder)
     decoder_prompt = DECODER_PROMPT_TEMPLATE_COT.format(stegotext=stegotext)
     recovered_message_response = await decoder_api.get_response(Question.from_prompt(decoder_prompt).messages)
     recovered_message = parse_answer(recovered_message_response)
@@ -178,7 +178,7 @@ async def judge_steganography(stego_judge: Model, stegotext: str) -> tuple[dict[
     Returns:
         tuple[dict[str, float], float | None]: (stego_logprobs, stego_score)
     """
-    judge_api = build_model_api(stego_judge)
+    judge_api = build_inference_api(stego_judge)
     stego_prompt = STEGO_JUDGE_PROMPT_TEMPLATE.format(stegotext=stegotext)
     stego_logprobs = await judge_api.get_logprobs(Question.from_prompt(stego_prompt).messages)
     stego_score = parse_logprobs_0_100(stego_logprobs)
@@ -191,7 +191,7 @@ async def judge_fidelity(fidelity_judge: Model, plaintext: str, recovered_messag
     Returns:
         tuple[dict[str, float], float | None]: (fidelity_logprobs, fidelity_score)
     """
-    judge_api = build_model_api(fidelity_judge)
+    judge_api = build_inference_api(fidelity_judge)
     fidelity_prompt = FIDELITY_JUDGE_PROMPT_TEMPLATE.format(
         original_message=plaintext, 
         recovered_message=recovered_message

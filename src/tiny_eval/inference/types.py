@@ -98,18 +98,6 @@ class InferenceChoice(pydantic.BaseModel):
     message: Message
     logprobs: LogProbs | None = None
 
-class InferenceResponse(pydantic.BaseModel):
-    # metadata
-    model: str
-    choices: list[InferenceChoice]
-
-    # usage statistics
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-    model_config = pydantic.ConfigDict(protected_namespaces=())
-
     @pydantic.field_validator("stop_reason", mode="before")
     def parse_stop_reason(cls, v: str):
         if v in ["length"]:
@@ -124,14 +112,21 @@ class InferenceResponse(pydantic.BaseModel):
             return StopReason.API_ERROR
         raise ValueError(f"Invalid stop reason: {v}")
 
-    def to_dict(self):
-        return {**self.model_dump(), "stop_reason": str(self.stop_reason)}
 
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
+class InferenceResponse(pydantic.BaseModel):
+    # metadata
+    model: str
+    choices: list[InferenceChoice]
+
+    # usage statistics
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+    model_config = pydantic.ConfigDict(protected_namespaces=())
 
 class InferencePrompt(HashableBaseModel):
-    messages: Sequence[Message]
+    messages: list[Message]
 
     def __str__(self) -> str:
         out = ""
