@@ -4,9 +4,16 @@ from enum import Enum
 from pathlib import Path
 from dotenv import load_dotenv
 
-curr_dir = Path(__file__).parent
-project_dir = curr_dir.parents[2]
+PROJECT_DIR = os.getenv("PROJECT_DIR")
+if PROJECT_DIR is None:
+    curr_dir = Path(__file__).parent
+    project_dir = curr_dir.parents[2]
+else:
+    project_dir = Path(PROJECT_DIR)
+
 load_dotenv(project_dir / ".env")
+
+CACHE_DIR = Path(os.getenv("CACHE_DIR", project_dir / "cache"))
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
