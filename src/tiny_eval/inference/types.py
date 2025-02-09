@@ -33,11 +33,11 @@ class InferenceParams(HashableBaseModel):
     response_format: Any = None
     tools: list[dict] | None = None
     tool_choice: str | dict | None = None
-    parallel_tool_calls: bool = True
+    parallel_tool_calls: bool | None = None
     
     # Additional parameters for specific models/features
-    store: bool = False
-    reasoning_effort: Literal["low", "medium", "high"] | None = "medium"
+    store: bool | None = None
+    reasoning_effort: Literal["low", "medium", "high"] | None = None
     metadata: dict[str, str] | None = pydantic.Field(
         default=None,
         json_schema_extra={
@@ -86,7 +86,7 @@ class InferenceParams(HashableBaseModel):
 
 class StopReason(str, Enum):
     MAX_TOKENS = "max_tokens"
-    STOP_SEQUENCE = "stop_sequence"
+    STOP_SEQUENCE = "stop"
     CONTENT_FILTER = "content_filter"
     TOOL_CALL = "tool_call"
     API_ERROR = "api_error"
@@ -99,25 +99,6 @@ class InferenceChoice(pydantic.BaseModel):
     stop_reason: StopReason
     message: Message
     logprobs: LogProbs | None = None
-
-    @pydantic.field_validator("stop_reason", mode="before")
-    def parse_stop_reason(cls, v: str | StopReason) -> StopReason:
-        # If already a StopReason, return it as-is.
-        if isinstance(v, StopReason):
-            return v
-
-        if v in ["length"]:
-            return StopReason.MAX_TOKENS
-        elif v in ["stop", "stop_sequence"]:
-            return StopReason.STOP_SEQUENCE
-        elif v in ["content_filter"]:
-            return StopReason.CONTENT_FILTER
-        elif v in ["tool_call", "function_call"]:
-            return StopReason.TOOL_CALL
-        elif v in ["api_error"]:
-            return StopReason.API_ERROR
-        raise ValueError(f"Invalid stop reason: {v}")
-
 
 class InferenceResponse(pydantic.BaseModel):
     # metadata

@@ -44,12 +44,11 @@ async def _openai_chat_completion(
     response: ChatCompletion = await client.chat.completions.create(
         model=model,
         messages=message_obj,
-        **params.model_dump(),
+        **params.model_dump(exclude_none=True),
     )
-    
-    if response.model != model:
-        # This should never happen, but it's good to have a fallback.
-        raise RuntimeError(f"OpenAI returned a different model than requested: {response.model} != {model}")
+
+    # NOTE: response model is source of truth for model name
+    # because OpenAI has aliases for models.
 
     return InferenceResponse(
         model=response.model,
