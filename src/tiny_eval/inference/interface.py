@@ -1,32 +1,38 @@
 from abc import ABC, abstractmethod
 
-from tiny_eval.core.messages import Message, MessageRole
 from tiny_eval.inference.types import InferencePrompt, InferenceParams, InferenceResponse
 
 class InferenceAPIInterface(ABC):
     """
     Abstract class for an inference API.
+    
+    This interface defines the contract for making inference calls to language models.
+    Implementations should handle:
+    - Model-specific rate limiting
+    - Organization/API key management
+    - Error handling and retries
     """
 
     @abstractmethod
-    async def __call__(self, prompt: InferencePrompt, params: InferenceParams) -> InferenceResponse:
-        pass
-
-
-async def get_response(api: InferenceAPIInterface, prompt: str | InferencePrompt, params: InferenceParams | None = None) -> str:
-    """
-    Get a response from the inference API.
-    
-    Args:
-        api: The inference API to use
-        prompt: The prompt string to send
-        params: Optional inference parameters
+    async def __call__(
+        self, 
+        model: str,
+        prompt: InferencePrompt, 
+        params: InferenceParams,
+    ) -> InferenceResponse:
+        """Make an inference call to the language model.
         
-    Returns:
-        The response content as a string
-    """
-    if isinstance(prompt, str):
-        prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])
-    params = params or InferenceParams()
-    response = await api(prompt, params)
-    return response.choices[0].message.content
+        Args:
+            model: The model identifier to use (e.g., "gpt-4", "claude-3")
+            prompt: The prompt to send to the model
+            params: Parameters controlling the inference call
+            organization_id: Optional organization ID to use for this call
+            
+        Returns:
+            The model's response
+            
+        Raises:
+            ValueError: If the model is not supported
+            RuntimeError: If the API call fails
+        """
+        pass

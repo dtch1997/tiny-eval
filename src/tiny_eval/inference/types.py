@@ -1,7 +1,7 @@
 import pydantic
 
 from enum import Enum
-from typing import Any, Literal, Sequence
+from typing import Any, Literal
 from typing_extensions import Self
 
 from tiny_eval.core.messages import Message, LogProbs
@@ -12,6 +12,7 @@ class InferenceParams(HashableBaseModel):
     
     All fields are optional unless marked as Required.
     """
+
     # Optional parameters with defaults
     temperature: float = 1.0
     top_p: float = 1.0
