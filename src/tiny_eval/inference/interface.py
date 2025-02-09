@@ -13,7 +13,7 @@ class InferenceAPIInterface(ABC):
         pass
 
 
-async def get_response(api: InferenceAPIInterface, prompt: str, params: InferenceParams | None = None) -> str:
+async def get_response(api: InferenceAPIInterface, prompt: str | InferencePrompt, params: InferenceParams | None = None) -> str:
     """
     Get a response from the inference API.
     
@@ -25,7 +25,8 @@ async def get_response(api: InferenceAPIInterface, prompt: str, params: Inferenc
     Returns:
         The response content as a string
     """
-    prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])
+    if isinstance(prompt, str):
+        prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])
     params = params or InferenceParams()
     response = await api(prompt, params)
     return response.choices[0].message.content

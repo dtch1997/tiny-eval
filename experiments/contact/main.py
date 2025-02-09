@@ -14,21 +14,18 @@ results_dir.mkdir(parents=True, exist_ok=True)
 
 # Test words of varying difficulty
 WORDS = [
+    "idea",  # Common noun
     "elephant",  # Common noun
-    "azure",     # Less common word
-    "dance",     # Action word
-    "quick",     # Adjective
-    "through",   # Preposition
-    "xylophone", # Rare starting letter
-    "octopus",   # Animal
-    "mountain",  # Nature word
-    "whisper",   # Subtle word
-    "bright",    # Descriptive
+    "apple",  # Common noun
+    "banana",  # Common noun
+    "orange",  # Common noun
+    "pear",  # Common noun
+    "pineapple",  # Common noun
 ]
 
 async def main():
     # Configure experiment parameters
-    replicates = range(3)  # Reduce replicates since we're using more expensive models
+    replicates = range(1)  # Reduce replicates since we're using more expensive models
     models = [
         Model.GPT_4o,  # More capable model for complex reasoning
         # Model.GPT_4o_mini,  # Good balance of capability and cost
@@ -60,6 +57,7 @@ async def main():
     # Save combined results
     df = pd.DataFrame(results)
     print(df.head())
+    print(df['error'].unique())
     df.to_csv(results_dir / "results.csv", index=False)
 
 if __name__ == "__main__":
