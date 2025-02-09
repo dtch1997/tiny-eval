@@ -27,7 +27,6 @@ class InferenceCache(InferenceAPIInterface):
         api: InferenceAPIInterface,
         *,
         cache_dir: Optional[Path | str] = None,
-        cache_path: Optional[Path | str] = None
     ) -> None:
         """
         Initialize the cache, optionally loading from disk.
@@ -38,20 +37,15 @@ class InferenceCache(InferenceAPIInterface):
             cache_path: Full path to the cache file. If provided, it will be used instead of cache_dir.
         """
         self.api = api
-        if cache_path is not None:
-            self._cache_path = Path(cache_path)
-            self.cache_dir = self._cache_path.parent
-        else:
-            self._cache_path = None
-            self.cache_dir = Path(cache_dir) if cache_dir is not None else CACHE_DIR
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else CACHE_DIR
+        self.cache_dir.mkdir(exist_ok=True, parents=True)
+        
         # Initialize the cache as a plain dictionary.
         self._cache: dict[CacheKey, list[InferenceResponse]] = {}
         self.load_cache()
 
     @property
     def cache_path(self) -> Path:
-        if self._cache_path is not None:
-            return self._cache_path
         return self.cache_dir / "inference_cache.json"
 
     def load_cache(self) -> None:
@@ -75,21 +69,16 @@ class InferenceCache(InferenceAPIInterface):
 
     def save_cache(self) -> None:
         """Save the cache to disk."""
-        if self.cache_path is None:
-            return
 
         # Create parent directories if they don't exist
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
 
-        try:
-            # Convert cache to JSON-serializable format
-            cache_data = {
-                k.model_dump_json(): [r.model_dump() for r in v]
-                for k, v in self._cache.items()
-            }
-            self.cache_path.write_text(json.dumps(cache_data, indent=2))
-        except Exception as e:
-            print(f"Error saving cache to {self.cache_path}: {e}")
+        # Convert cache to JSON-serializable format
+        cache_data = {
+            k.model_dump_json(): [r.model_dump() for r in v]
+            for k, v in self._cache.items()
+        }
+        self.cache_path.write_text(json.dumps(cache_data, indent=2))
 
     async def _get_response(self, prompt: InferencePrompt, params: InferenceParams) -> list[InferenceResponse]:
         """Get responses for a prompt+params combination, using cache if available.

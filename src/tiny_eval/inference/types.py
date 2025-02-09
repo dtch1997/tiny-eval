@@ -40,9 +40,11 @@ class InferenceParams(HashableBaseModel):
     reasoning_effort: Literal["low", "medium", "high"] | None = "medium"
     metadata: dict[str, str] | None = pydantic.Field(
         default=None,
-        max_length_keys=64,
-        max_length_values=512,
-        max_items=16
+        json_schema_extra={
+            "max_length_keys": 64,
+            "max_length_values": 512,
+            "max_items": 16
+        }
     )
     modalities: list[str] | None = None
     service_tier: Literal["auto", "default"] | None = "auto"
@@ -99,7 +101,11 @@ class InferenceChoice(pydantic.BaseModel):
     logprobs: LogProbs | None = None
 
     @pydantic.field_validator("stop_reason", mode="before")
-    def parse_stop_reason(cls, v: str):
+    def parse_stop_reason(cls, v: str | StopReason) -> StopReason:
+        # If already a StopReason, return it as-is.
+        if isinstance(v, StopReason):
+            return v
+
         if v in ["length"]:
             return StopReason.MAX_TOKENS
         elif v in ["stop"]:
