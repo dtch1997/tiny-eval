@@ -6,23 +6,13 @@ from tqdm.asyncio import tqdm_asyncio
 from itertools import product
 from tiny_eval.core.constants import Model
 from task import run_task, TaskConfig
+from words import get_random_subset
 
 pd.set_option('display.max_colwidth', None)
 
 curr_dir = pathlib.Path(__file__).parent
 results_dir = curr_dir / "results"
 results_dir.mkdir(parents=True, exist_ok=True)
-
-# Test words of varying difficulty
-WORDS = [
-    "idea",  # Common noun
-    "elephant",  # Common noun
-    "apple",  # Common noun
-    "banana",  # Common noun
-    "orange",  # Common noun
-    "pear",  # Common noun
-    "pineapple",  # Common noun
-]
 
 async def main():
     # Configure experiment parameters
@@ -32,9 +22,12 @@ async def main():
     player_model = Model.GPT_4o
     overseer_model = Model.GPT_4o_mini
     
+    # Get random subset of words
+    words = get_random_subset(n=10, seed=42)  # Set seed for reproducibility
+    
     # Generate all configurations
     configs = []
-    for word, replicate in product(WORDS, replicates):
+    for word, replicate in product(words, replicates):
         configs.append(TaskConfig(
             alice=player_model,  # More capable model for players
             bob=player_model,    # Same model for both players

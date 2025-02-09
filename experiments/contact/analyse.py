@@ -15,50 +15,136 @@ def load_results() -> pd.DataFrame:
     results_path = curr_dir / "results" / "results.csv"
     return pd.DataFrame(pd.read_csv(results_path))
 
-def format_conversation(conversation: List[str], full_interactions: Dict[str, List[Dict[str, Any]]] | str | None = None) -> str:
+def format_message(speaker: str, message: str) -> None:
+    """Display a single message in chat bubble style."""
+    # Create columns for message alignment
+    left, right = st.columns([6, 4]) if speaker.lower() == "alice" else st.columns([4, 6])
+    
+    # Style for message bubbles with text color
+    bubble_style = {
+        "alice": """
+            padding: 10px;
+            border-radius: 15px;
+            background-color: #DCF8C6;
+            color: #000000;
+            margin-bottom: 10px;
+            display: inline-block;
+            max-width: 100%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        """,
+        "bob": """
+            padding: 10px;
+            border-radius: 15px;
+            background-color: #E8E8E8;
+            color: #000000;
+            margin-bottom: 10px;
+            display: inline-block;
+            max-width: 100%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        """,
+        "system": """
+            padding: 10px;
+            border-radius: 15px;
+            background-color: #FFE4E1;
+            color: #000000;
+            margin: 10px auto;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        """
+    }
+    
+    if speaker.lower() == "alice":
+        with left:
+            st.markdown(f"""
+                <div style="{bubble_style['alice']}">
+                    <strong style="color: #000000;">{speaker}</strong><br>
+                    {message}
+                </div>
+            """, unsafe_allow_html=True)
+    elif speaker.lower() == "dean":
+        st.markdown(f"""
+            <div style="{bubble_style['system']}">
+                <strong style="color: #000000;">Overseer</strong><br>
+                {message}
+            </div>
+        """, unsafe_allow_html=True)
+    else:  # Bob
+        with right:
+            st.markdown(f"""
+                <div style="{bubble_style['bob']}">
+                    <strong style="color: #000000;">{speaker}</strong><br>
+                    {message}
+                </div>
+            """, unsafe_allow_html=True)
+
+def format_conversation(
+    conversation: List[str], 
+    full_interactions: Dict[str, List[Dict[str, Any]]] | str | None = None,
+    show_details: bool = False
+) -> None:
     """
-    Format the conversation for display with proper spacing and styling.
+    Format the conversation for display with chat-like styling.
     
     Args:
         conversation: List of conversation strings
         full_interactions: Optional dict or string containing detailed interaction logs
-        
-    Returns:
-        str: Formatted conversation text
+        show_details: Whether to show detailed interaction logs
     """
     if isinstance(conversation, str):
-        # Handle case where conversation is stored as string
         conversation = eval(conversation)
     
-    formatted = ""
+    # Process conversation messages
     for line in conversation:
         speaker = line.split(":")[0].strip()
         message = ":".join(line.split(":")[1:]).strip()
-        formatted += f"**{speaker}**: {message}\n\n"
         
-    # Add detailed interactions if available
-    if full_interactions:
-        # Parse full_interactions if it's a string
+        # Add final guesses to conversation if this is a CONTACT message
+        if "contact" in message.lower():
+            format_message(speaker, message)
+            
+            # Add final guesses if available
+            if full_interactions:
+                if isinstance(full_interactions, str):
+                    try:
+                        full_interactions = eval(full_interactions)
+                    except:
+                        continue
+                
+                # Get Bob's final guess
+                bob_final = next((i for i in reversed(full_interactions['player_2']) 
+                                if i['type'] == 'final_guess'), None)
+                if bob_final:
+                    format_message("Bob", f"Final Guess: {bob_final['content']}")
+                
+                # Get Dean's guess
+                dean_final = next((i for i in reversed(full_interactions['overseer']) 
+                                 if i['type'] == 'final_guess'), None)
+                if dean_final:
+                    format_message("Dean", f"Final Guess: {dean_final['content']}")
+        else:
+            format_message(speaker, message)
+    
+    # Add detailed interactions if requested
+    if full_interactions and show_details:
+        st.markdown("### Detailed Interactions")
         if isinstance(full_interactions, str):
             try:
                 full_interactions = eval(full_interactions)
             except:
-                # If parsing fails, skip detailed interactions
-                return formatted
+                return
         
-        formatted += "\n### Detailed Interactions\n\n"
         for player, interactions in full_interactions.items():
-            formatted += f"\n#### {player.title()}\n\n"
-            for interaction in interactions:
-                formatted += f"**Type**: {interaction['type']}\n\n"
-                if interaction['type'] == 'assistant':
-                    formatted += f"*Raw Response*:\n```\n{interaction['raw_response']}\n```\n\n"
-                    formatted += f"*Extracted Message*: {interaction['extracted_message']}\n\n"
-                elif interaction['type'] in ['system', 'final_guess']:
-                    formatted += f"*Content*: {interaction['content']}\n\n"
-                formatted += "---\n\n"
-    
-    return formatted
+            with st.expander(f"{player.title()} Details"):
+                for interaction in interactions:
+                    st.markdown(f"**Type**: {interaction['type']}")
+                    if interaction['type'] == 'assistant':
+                        st.markdown(f"*Raw Response*:")
+                        st.code(interaction['raw_response'])
+                        st.markdown(f"*Extracted Message*: {interaction['extracted_message']}")
+                    elif interaction['type'] in ['system', 'final_guess']:
+                        st.markdown(f"*Content*: {interaction['content']}")
+                    st.markdown("---")
 
 def analyze_results(df: pd.DataFrame) -> Dict[str, Any]:
     """
@@ -112,76 +198,16 @@ def display_conversation_page(filtered_df: pd.DataFrame, page_idx: int):
     
     # Display conversation details
     st.markdown(f"### Game {row.name}")
-    st.markdown(f"**Winner**: {row['winner']}")
-    st.markdown(f"**Turns**: {row['turns']}")
-    st.markdown(f"**Secret Word**: {row['secret_word']}")
+    st.markdown(f"**Winner**: {row['winner']} | **Turns**: {row['turns']} | **Secret Word**: {row['secret_word']}")
     
     # Display conversation
     st.markdown("### Conversation")
-    
-    # Add toggle for detailed view
     show_details = st.checkbox("Show detailed interactions", key=f"details_{page_idx}")
-    
-    if show_details:
-        st.markdown(format_conversation(
-            row['conversation'], 
-            row.get('full_interactions', None)
-        ))
-    else:
-        # Show just the basic conversation without detailed interactions
-        if isinstance(row['conversation'], str):
-            conversation = eval(row['conversation'])
-        else:
-            conversation = row['conversation']
-        
-        for line in conversation:
-            speaker = line.split(":")[0].strip()
-            message = ":".join(line.split(":")[1:]).strip()
-            st.markdown(f"**{speaker}**: {message}")
-    
-    if row['contact_declared']:
-        st.markdown("### Final Guesses")
-        
-        # Create columns for each player's guess
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("#### Alice")
-            st.markdown(f"**Word**: {row['secret_word']}")
-            # Get Alice's final message
-            if isinstance(row['conversation'], str):
-                conversation = eval(row['conversation'])
-            else:
-                conversation = row['conversation']
-            alice_final = next((msg for msg in reversed(conversation) 
-                              if msg.startswith("Alice:")), "No final message")
-            st.markdown(f"**Final Message**: {alice_final.split(':', 1)[1].strip()}")
-            
-        with col2:
-            st.markdown("#### Bob")
-            st.markdown(f"**Guess**: {row.get('bob_guess', 'N/A')}")
-            # Get Bob's reasoning from full interactions
-            if row.get('full_interactions'):
-                interactions = row['full_interactions']
-                if isinstance(interactions, str):
-                    interactions = eval(interactions)
-                bob_final = next((i for i in reversed(interactions['player_2']) 
-                                if i['type'] == 'final_guess'), None)
-                if bob_final:
-                    st.markdown(f"**Reasoning**: {bob_final['content']}")
-            
-        with col3:
-            st.markdown("#### Dean")
-            st.markdown(f"**Guess**: {row.get('dean_guess', 'N/A')}")
-            # Get Dean's reasoning from full interactions
-            if row.get('full_interactions'):
-                interactions = row['full_interactions']
-                if isinstance(interactions, str):
-                    interactions = eval(interactions)
-                dean_final = next((i for i in reversed(interactions['overseer']) 
-                                 if i['type'] == 'final_guess'), None)
-                if dean_final:
-                    st.markdown(f"**Reasoning**: {dean_final['content']}")
+    format_conversation(
+        row['conversation'], 
+        row.get('full_interactions', None),
+        show_details=show_details
+    )
 
 def main():
     st.title("Contact Game Analysis")
