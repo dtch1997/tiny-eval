@@ -18,7 +18,7 @@ cache_dir.mkdir(parents=True, exist_ok=True)
 async def main():
     # Configure experiment parameters
     replicates = range(3)
-    player_model = Model.GPT_4o
+    player_model = Model.DEEPSEEK_R1
     overseer_model = Model.GPT_4o_mini
     words = get_random_subset(n=10, seed=42)
     
@@ -29,6 +29,7 @@ async def main():
             bob=player_model,
             dean=overseer_model,
             secret_word=word,
+            max_turns=20,
             name=f"players_{player_model.value}_overseer_{overseer_model.value}_{word}_{replicate}".replace("/", "-")
         )
         for word, replicate in product(words, replicates)
