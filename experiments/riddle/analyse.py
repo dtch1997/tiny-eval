@@ -128,18 +128,53 @@ def main():
     
     # Filters
     st.markdown("### 🔍 Filter Riddles")
-    col1, col2 = st.columns(2)
-    with col1:
-        show_correct = st.checkbox("Show only solved correctly", False)
-    with col2:
-        show_incorrect = st.checkbox("Show only solved incorrectly", False)
     
-    # Filter based on checkboxes
+    # Create three columns for filters
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    
+    with filter_col1:
+        st.markdown("**Correctness**")
+        show_correct = st.checkbox("Show correct", True)
+        show_incorrect = st.checkbox("Show incorrect", True)
+    
+    with filter_col2:
+        st.markdown("**Riddler Model**")
+        # Get unique riddler models
+        riddler_models = ['All'] + sorted(df['riddler_model'].unique().tolist())
+        selected_riddler = st.selectbox(
+            "Select Riddler Model",
+            options=riddler_models,
+            key="riddler_filter"
+        )
+    
+    with filter_col3:
+        st.markdown("**Solver Model**")
+        # Get unique solver models
+        solver_models = ['All'] + sorted(df['solver_model'].unique().tolist())
+        selected_solver = st.selectbox(
+            "Select Solver Model",
+            options=solver_models,
+            key="solver_filter"
+        )
+    
+    # Filter based on all selections
     filtered_df = df[df['status'] == 'success']  # Start with successful attempts
+    
+    # Filter by correctness
     if show_correct and not show_incorrect:
         filtered_df = filtered_df[filtered_df['is_correct']]
     elif show_incorrect and not show_correct:
         filtered_df = filtered_df[~filtered_df['is_correct']]
+    elif not show_correct and not show_incorrect:
+        filtered_df = filtered_df[filtered_df['is_correct'] != filtered_df['is_correct']]  # Empty DataFrame
+    
+    # Filter by riddler model
+    if selected_riddler != 'All':
+        filtered_df = filtered_df[filtered_df['riddler_model'] == selected_riddler]
+    
+    # Filter by solver model
+    if selected_solver != 'All':
+        filtered_df = filtered_df[filtered_df['solver_model'] == selected_solver]
     
     # Display individual riddles
     st.markdown("### 🎯 Can You Solve These Riddles?")
