@@ -3,7 +3,7 @@ from typing import List
 
 from tiny_eval.core.constants import Model
 from tiny_eval.inference import get_response
-from tiny_eval.inference.types import InferencePrompt
+from tiny_eval.inference.data_models import InferencePrompt
 from tiny_eval.core.messages import Message, MessageRole
 
 @pytest.fixture

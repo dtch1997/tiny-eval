@@ -21,6 +21,8 @@ from tiny_eval.inference.data_models import (
 )
 from tiny_eval.core.messages import MessageRole
 
+from tiny_eval.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
+
 def on_backoff(details):
     """We don't print connection error because there's sometimes a lot of them and they're not interesting."""
     exception_details = details["exception"]
@@ -91,7 +93,7 @@ async def _openai_chat_completion(
         total_tokens=usage.total_tokens,
     )
 
-class OpenAIInferenceAPI(InferenceAPIInterface):
+class OpenRouterInferenceAPI(InferenceAPIInterface):
     """
     Inference API for OpenAI with rate limiting
     """
@@ -102,7 +104,10 @@ class OpenAIInferenceAPI(InferenceAPIInterface):
         self,
         client: AsyncOpenAI | None = None,
     ):
-        self.client = client or AsyncOpenAI()
+        self.client = client or AsyncOpenAI(
+            api_key=OPENROUTER_API_KEY,
+            base_url=OPENROUTER_BASE_URL,
+        )
     
     async def __call__(
         self, 

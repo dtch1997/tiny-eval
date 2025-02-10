@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from tiny_eval.inference.types import InferencePrompt, InferenceParams, InferenceResponse
+from tiny_eval.inference.data_models import InferencePrompt, InferenceParams, InferenceResponse
 
 class InferenceAPIInterface(ABC):
     """

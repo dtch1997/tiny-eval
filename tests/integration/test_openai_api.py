@@ -2,7 +2,7 @@ import pytest
 from openai import AsyncOpenAI
 
 from tiny_eval.inference.openai.api import OpenAIInferenceAPI
-from tiny_eval.inference.types import InferencePrompt, InferenceParams
+from tiny_eval.inference.data_models import InferencePrompt, InferenceParams
 from tiny_eval.core.messages import Message, MessageRole
 
 @pytest.fixture

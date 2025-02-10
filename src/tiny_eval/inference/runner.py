@@ -2,7 +2,7 @@ from openai import AsyncOpenAI
 from tiny_eval.core.constants import Model
 from tiny_eval.inference.interface import InferenceAPIInterface
 from tiny_eval.inference.openai.api import OpenAIInferenceAPI
-from tiny_eval.inference.types import InferenceParams, InferencePrompt
+from tiny_eval.inference.data_models import InferenceParams, InferencePrompt
 from tiny_eval.core.constants import OPENAI_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from tiny_eval.core.messages import Message, MessageRole
 from typing import Union

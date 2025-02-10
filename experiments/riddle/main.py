@@ -18,11 +18,21 @@ cache_dir.mkdir(parents=True, exist_ok=True)
 async def main():
     # Configure experiment parameters
     replicates = range(1)
-    riddler_model = Model.GPT_4o  # Using a more capable model for riddle generation
-    solver_model = Model.CLAUDE_3_5_SONNET  # Using a different model family for solving
+    
+    # Define available models
+    available_models = [
+        Model.GPT_4o,
+        Model.CLAUDE_3_5_SONNET,
+        Model.DEEPSEEK_R1,
+        Model.LLAMA_3_3_70B_INSTRUCT,
+    ]
+    
+    # Get all combinations of riddler and solver models
+    model_pairs = list(product(available_models, available_models))
+    
     words = get_random_subset(n=100, seed=0)
     
-    # Generate configs
+    # Generate configs for all model combinations
     configs = [
         RiddleTaskConfig(
             riddler=riddler_model,
@@ -30,7 +40,7 @@ async def main():
             target_word=word,
             name=f"riddler_{riddler_model.value}_solver_{solver_model.value}_{word}_{replicate}".replace("/", "-")
         )
-        for word, replicate in product(words, replicates)
+        for (riddler_model, solver_model), word, replicate in product(model_pairs, words, replicates)
     ]
     
     # Initialize task with cache directory

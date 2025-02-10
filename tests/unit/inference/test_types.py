@@ -7,7 +7,7 @@ These tests verify that the objects can be instantiated and that the hash method
 
 import pytest
 
-from tiny_eval.inference.types import (
+from tiny_eval.inference.data_models import (
     InferenceParams,
     InferencePrompt,
     InferenceChoice,
