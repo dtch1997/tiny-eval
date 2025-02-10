@@ -65,8 +65,13 @@ class Task(Generic[ConfigT, ResultT], ABC):
                 try:
                     with open(cache_path) as f:
                         result = json.load(f)
-                        logger.info(f"Cache hit for task {task_id}")
-                        return result
+                        if result['status'] == "sucess":
+                            logger.info(f"Cache hit for task {task_id}")
+                            return result
+                        else:
+                            logger.info(f"Cache hit for task {task_id} but result is error: {result['error']}")
+                            # delete cache file
+                            cache_path.unlink()
                 except json.JSONDecodeError:
                     logger.warning(f"Corrupted cache file for task {task_id}, will rerun task")
                 except OSError as e:

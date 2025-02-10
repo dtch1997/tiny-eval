@@ -24,7 +24,7 @@ async def main():
         Model.GPT_4o,
         Model.CLAUDE_3_5_SONNET,
         Model.DEEPSEEK_R1,
-        Model.LLAMA_3_3_70B_INSTRUCT,
+        Model.GPT_4o_mini
     ]
     
     # Get all combinations of riddler and solver models

@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import pathlib
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Setup paths
 curr_dir = pathlib.Path(__file__).parent
@@ -17,6 +19,55 @@ def load_data() -> pd.DataFrame:
     if 'is_correct' in df.columns:
         df['is_correct'] = df['is_correct'].astype(bool)
     return df
+
+def create_performance_heatmap(df: pd.DataFrame) -> plt.Figure:
+    """
+    Create a heatmap showing success rates between riddler and solver models
+    
+    Args:
+        df: DataFrame containing the results
+        
+    Returns:
+        matplotlib.figure.Figure: The heatmap figure
+    """
+    # Filter for successful attempts only
+    success_df = df[df['status'] == 'success']
+    
+    # Create pivot table of success rates
+    pivot = pd.pivot_table(
+        success_df,
+        values='is_correct',
+        index='riddler_model',
+        columns='solver_model',
+        aggfunc='mean'
+    )
+    
+    # Create figure and axis with smaller size
+    fig, ax = plt.subplots(figsize=(12, 12))
+    
+    # Create heatmap
+    sns.heatmap(
+        pivot,
+        annot=True,  # Show values in cells
+        fmt='.1%',   # Format as percentages
+        cmap='RdYlGn',  # Red to Yellow to Green colormap
+        vmin=0,
+        vmax=1,
+        cbar_kws={'label': 'Success Rate'},
+        ax=ax,
+        square=True  # Make cells square for better appearance
+    )
+    
+    # Customize appearance
+    plt.title('Model Performance Matrix', pad=10)
+    plt.xlabel('Solver Model', labelpad=10)
+    plt.ylabel('Riddler Model', labelpad=10)
+    
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    
+    return fig
 
 def main():
     st.title("🧩 Riddle Me This!")
@@ -41,12 +92,9 @@ def main():
     # Load data
     df = load_data()
     
-    # Initialize session state for tracking revealed answers
-    if 'revealed_answers' not in st.session_state:
-        st.session_state.revealed_answers = set()
-    
     # Display overall statistics in a collapsed section
-    with st.expander("📊 Show Statistics", expanded=False):
+    with st.expander("📊 Show Statistics", expanded=True):
+        # Overall metrics
         col1, col2, col3 = st.columns(3)
         with col1:
             success_rate = (df['status'] == 'success').mean()
@@ -57,6 +105,26 @@ def main():
         with col3:
             total_riddles = len(df)
             st.metric("Total Riddles", total_riddles)
+            
+        # Add spacing
+        st.markdown("### 🎯 Model Performance Matrix")
+        st.markdown("This heatmap shows how well each solver model performs against riddles created by different riddler models:")
+        
+        # Create and display heatmap
+        fig = create_performance_heatmap(df)
+        st.pyplot(fig)
+        
+        # Add explanation of the heatmap
+        st.markdown("""
+        **How to read the heatmap:**
+        - Each cell shows the success rate of a solver model (columns) solving riddles created by a riddler model (rows)
+        - Darker green indicates higher success rates
+        - Darker red indicates lower success rates
+        """)
+    
+    # Initialize session state for tracking revealed answers
+    if 'revealed_answers' not in st.session_state:
+        st.session_state.revealed_answers = set()
     
     # Filters
     st.markdown("### 🔍 Filter Riddles")
