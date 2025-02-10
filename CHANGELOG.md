@@ -2,6 +2,87 @@
 
 
 
+## v0.1.0 (2025-02-10)
+
+### Chore
+
+* chore: fix ci to run unit tests only ([`57a130d`](https://github.com/dtch1997/tiny-eval/commit/57a130dbd5f40974d7dabb71e4d68bca0787edfe))
+
+### Feature
+
+* feat: Tasks
+
+Add Contact task + viewer ([`4522603`](https://github.com/dtch1997/tiny-eval/commit/452260335ce6fb19a8def2f134371612168adf80))
+
+### Unknown
+
+* fix unused imports ([`de2e140`](https://github.com/dtch1997/tiny-eval/commit/de2e140284be65706076849bafae9441a06c1704))
+
+* fix types ([`b40b20b`](https://github.com/dtch1997/tiny-eval/commit/b40b20be5a1071b7b993d70ca3069a6c000c093b))
+
+* update ([`91be85e`](https://github.com/dtch1997/tiny-eval/commit/91be85e4e36f5df5f076c644cf4475dd27da3e52))
+
+* add contact task ([`454d8fd`](https://github.com/dtch1997/tiny-eval/commit/454d8fd121d0edca142a5201c25e30879720da06))
+
+* update ([`2f02c6e`](https://github.com/dtch1997/tiny-eval/commit/2f02c6edf976f38352e15995233932d49fce0196))
+
+* update ([`be05492`](https://github.com/dtch1997/tiny-eval/commit/be05492889ade012af01c2a6d4e06da5209b2c64))
+
+* update ([`f2136cd`](https://github.com/dtch1997/tiny-eval/commit/f2136cd06026e3ada7715d03d7e29f44b5b683fb))
+
+* add Task framework ([`93aaa66`](https://github.com/dtch1997/tiny-eval/commit/93aaa660a9fb0d5a0f409568441c459b06b2ce54))
+
+* Merge pull request #3 from dtch1997/inference-api-refactor
+
+Inference api refactor ([`3b9a89d`](https://github.com/dtch1997/tiny-eval/commit/3b9a89d5c1c75c8fa6ac902be915816b1991b2eb))
+
+* update ([`cb97ee9`](https://github.com/dtch1997/tiny-eval/commit/cb97ee9fabcb2c98472c95667a35c2b1df86015a))
+
+* update ([`15f436e`](https://github.com/dtch1997/tiny-eval/commit/15f436edf9d6b446a6aed9ee8c131c70a6a65653))
+
+* update ([`41e2be4`](https://github.com/dtch1997/tiny-eval/commit/41e2be4126496d08636f97142c3b18aa8fa06fb4))
+
+* update ([`7877a54`](https://github.com/dtch1997/tiny-eval/commit/7877a542c24482e0e8e16b1e2ec1814bffe848a1))
+
+* update ([`08dd65c`](https://github.com/dtch1997/tiny-eval/commit/08dd65c04dc0bd36a03e79d96778f615625b3503))
+
+* update ([`356c586`](https://github.com/dtch1997/tiny-eval/commit/356c5867b55ebd5aec710dfb2fef74bcdc1ced32))
+
+* update ([`2f88eb5`](https://github.com/dtch1997/tiny-eval/commit/2f88eb5dc0a5cecead5ea9b2855301b590f8ec35))
+
+* update ([`61d3a06`](https://github.com/dtch1997/tiny-eval/commit/61d3a066bc96ff9e75c6e53626224edd437a1d6b))
+
+* remove deprecated code ([`0632430`](https://github.com/dtch1997/tiny-eval/commit/0632430e07986721c3016c01009f34dceb725fba))
+
+* update ([`a47d39f`](https://github.com/dtch1997/tiny-eval/commit/a47d39f9ce2beae77bba59f0fa9a453828ddff59))
+
+* Merge pull request #2 from dtch1997/daniel
+
+chore: fix ci to run unit tests only ([`8af1acc`](https://github.com/dtch1997/tiny-eval/commit/8af1acc8beb38920167ee1e0ef0b7333ebf4aee9))
+
+* fix ci to not use pdm.lock file ([`69ee0ed`](https://github.com/dtch1997/tiny-eval/commit/69ee0ed8bff35e7f8044e973cd0a42ad196964ab))
+
+* Merge pull request #1 from dtch1997/daniel
+
+breaking: major refactor ([`976c237`](https://github.com/dtch1997/tiny-eval/commit/976c2378c7617d2528230efcb8cd88acd8eff961))
+
+* update ([`72870be`](https://github.com/dtch1997/tiny-eval/commit/72870be7757f15912f82c12bd40624a2585e2fe0))
+
+* update ([`9157350`](https://github.com/dtch1997/tiny-eval/commit/9157350f59ec30a4bb5e5dbcce8c071062bdfc58))
+
+* update ([`5e1f63c`](https://github.com/dtch1997/tiny-eval/commit/5e1f63c5b4eb02af26c93b91a8611daea2ebc696))
+
+* tests passing ([`622b53a`](https://github.com/dtch1997/tiny-eval/commit/622b53a8f07a53f570983aa6f636f4269ca16bf2))
+
+* update ([`565e85b`](https://github.com/dtch1997/tiny-eval/commit/565e85bc37d7eb71f3ab6f7b5dbce6bd10e72351))
+
+* update ([`2b556d7`](https://github.com/dtch1997/tiny-eval/commit/2b556d7a576a3cec37c0bddd312f5bd1bedc70b4))
+
+* update ([`f56d75d`](https://github.com/dtch1997/tiny-eval/commit/f56d75d6338f1d1c2cd114943a312d4819b0cc22))
+
+* update ([`83b0ee7`](https://github.com/dtch1997/tiny-eval/commit/83b0ee7e5ab1a2f75ead47d9b8d5121268a52cfc))
+
+
 ## v0.0.0 (2025-02-07)
 
 ### Unknown
