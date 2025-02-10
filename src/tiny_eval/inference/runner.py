@@ -5,10 +5,13 @@ from tiny_eval.inference.openai.api import OpenAIInferenceAPI
 from tiny_eval.inference.types import InferenceParams, InferencePrompt
 from tiny_eval.core.constants import OPENAI_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_API_KEY
 from tiny_eval.core.messages import Message, MessageRole
+from typing import Union
 
 
-def build_inference_api(model: Model) -> InferenceAPIInterface:
+def build_inference_api(model: Union[str, Model]) -> InferenceAPIInterface:
     """Build an inference API for a given model"""
+    if isinstance(model, str):
+        model = Model(model)
 
     if model.value.startswith("openai/"):                  
         return OpenAIInferenceAPI(
@@ -24,7 +27,7 @@ def build_inference_api(model: Model) -> InferenceAPIInterface:
 
 
 async def get_response(
-    model: str,
+    model: Union[str, Model],
     prompt: str | InferencePrompt,
     params: InferenceParams | None = None,
 ) -> str:
@@ -40,6 +43,8 @@ async def get_response(
     Returns:
         The response content as a string
     """
+    if isinstance(model, str):
+        model = Model(model)
     api = build_inference_api(model)
     if isinstance(prompt, str):
         prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])

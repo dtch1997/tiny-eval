@@ -10,10 +10,9 @@ from tqdm.asyncio import tqdm_asyncio
 # Configure logging
 logger = logging.getLogger(__name__)
 
-ConfigT = TypeVar('ConfigT')
+ConfigT = TypeVar('ConfigT', bound='BaseTaskConfig')
 ResultT = TypeVar('ResultT')
 
-@dataclass
 class BaseTaskConfig(ABC):
     """Base class for task configurations"""
     

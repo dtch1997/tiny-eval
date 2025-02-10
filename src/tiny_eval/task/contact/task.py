@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
+from typing_extensions import Literal
 
 import hashlib
 
@@ -7,7 +8,7 @@ from tiny_eval.task.base import Task, BaseTaskConfig
 from tiny_eval.core.constants import Model
 from tiny_eval.inference import build_inference_api, get_response
 from tiny_eval.inference.types import InferencePrompt
-from tiny_eval.core.messages import Message
+from tiny_eval.core.messages import Message, MessageRole
 from .game import ContactGame, GameResult, Player, GameState
 
 @dataclass
@@ -109,16 +110,14 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
     def build_prompt(self, *, system: str, conversation: List[str] | None = None, 
                     user_message: str | None = None) -> InferencePrompt:
         """Build an InferencePrompt from system prompt and optional conversation history."""
-        messages = [Message(role="system", content=system)]
+        messages = [Message(role=MessageRole.system, content=system)]
         
         if conversation:
             for msg in conversation:
-                role = msg.split(":")[0].strip().lower()
-                content = ":".join(msg.split(":")[1:]).strip()
-                messages.append(Message(role="assistant", content=content))
+                messages.append(Message(role=MessageRole.assistant, content=msg))
                 
         if user_message:
-            messages.append(Message(role="user", content=user_message))
+            messages.append(Message(role=MessageRole.user, content=user_message))
             
         return InferencePrompt(messages=messages)
 
@@ -154,14 +153,14 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
 
     async def run_single(self, config: ContactTaskConfig) -> Dict[str, Any]:
         """Run a single instance of the Contact task"""
+        game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
+        full_interactions: Dict[str, List[Any]] = {
+            "alice": [],
+            "bob": [],
+            "dean": []
+        }
+        
         try:
-            game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
-            full_interactions = {
-                "alice": [],
-                "bob": [],
-                "dean": []
-            }
-            
             # First turn - Alice starts
             alice_msg = await get_player_response(
                 config.alice,
@@ -236,10 +235,10 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                 "alice_model": config.alice.value,
                 "bob_model": config.bob.value,
                 "dean_model": config.dean.value,
-                "conversation": game.conversation_history if 'game' in locals() else [],
-                "turns": game.turn_count if 'game' in locals() else 0,
+                "conversation": game.conversation_history,
+                "turns": game.turn_count,
                 "contact_declared": False,
-                "full_interactions": full_interactions if 'full_interactions' in locals() else {}
+                "full_interactions": full_interactions
             } 
 
 async def get_player_response(
@@ -248,26 +247,15 @@ async def get_player_response(
     conversation: List[str],
     user_message: Optional[str] = None
 ) -> str:
-    """
-    Get response from a player with appropriate system prompt
-    
-    Args:
-        model: The model to use
-        system_prompt: The system prompt for this player
-        conversation: Current conversation history
-        user_message: Optional specific message to the player
-        
-    Returns:
-        The extracted message from the player's response
-    """
-    messages = [Message(role="system", content=system_prompt)]
+    """Get response from a player with appropriate system prompt"""
+    messages = [Message(role=MessageRole.system, content=system_prompt)]
     
     # Add conversation history
     for msg in conversation:
-        messages.append(Message(role="assistant", content=msg))
+        messages.append(Message(role=MessageRole.assistant, content=msg))
         
     if user_message:
-        messages.append(Message(role="user", content=user_message))
+        messages.append(Message(role=MessageRole.user, content=user_message))
         
     prompt = InferencePrompt(messages=messages)
     response = await get_response(model, prompt)
@@ -286,15 +274,15 @@ def extract_message(response: str) -> str:
 
 async def run_task(config: ContactTaskConfig) -> Dict[str, Any]:
     """Run a full game of Contact"""
+    game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
+    conversation: List[str] = []
+    full_interactions: Dict[str, List[Any]] = {
+        "alice": [],
+        "bob": [],
+        "dean": []
+    }
+    
     try:
-        game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
-        conversation: List[str] = []
-        full_interactions = {
-            "alice": [],
-            "bob": [],
-            "dean": []
-        }
-        
         # First turn - Alice starts
         alice_msg = await get_player_response(
             config.alice,
@@ -370,8 +358,8 @@ async def run_task(config: ContactTaskConfig) -> Dict[str, Any]:
             "alice_model": config.alice.value,
             "bob_model": config.bob.value,
             "dean_model": config.dean.value,
-            "conversation": conversation if 'conversation' in locals() else [],
-            "turns": game.turn_count if 'game' in locals() else 0,
+            "conversation": conversation,
+            "turns": game.turn_count,
             "contact_declared": False,
-            "full_interactions": full_interactions if 'full_interactions' in locals() else {}
+            "full_interactions": full_interactions
         } 
