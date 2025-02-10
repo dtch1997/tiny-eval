@@ -21,6 +21,23 @@ def load_data() -> pd.DataFrame:
 def main():
     st.title("🧩 Riddle Me This!")
     
+    # Add description of riddle generation process
+    st.markdown("""
+    ### 🎮 How It Works
+    
+    Each riddle is created through an AI-powered two-step process:
+    1. A "Riddler" AI model creates a 4-line rhyming riddle for a target word
+    2. A "Solver" AI model attempts to solve the riddle without knowing the target word
+    
+    The Riddler is instructed to create challenging but solvable riddles that follow strict rules:
+    - Exactly 4 lines with rhyming structure
+    - No obvious synonyms or direct references
+    - Must have exactly one correct answer
+    
+    This creates an interesting dynamic where we can see how well one AI model can solve
+    riddles created by another!
+    """)
+    
     # Load data
     df = load_data()
     
