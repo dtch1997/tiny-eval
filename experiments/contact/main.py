@@ -5,7 +5,7 @@ import pathlib
 from itertools import product
 from tiny_eval.core.constants import Model
 from words import get_random_subset
-from tiny_eval.task.contact import ContactTask, ContactTaskConfig
+from tiny_eval.task.contact.task import ContactTask, ContactTaskConfig
 
 pd.set_option('display.max_colwidth', None)
 

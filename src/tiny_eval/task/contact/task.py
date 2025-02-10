@@ -270,8 +270,7 @@ async def get_player_response(
         messages.append(Message(role="user", content=user_message))
         
     prompt = InferencePrompt(messages=messages)
-    api = build_inference_api(model)
-    response = await get_response(api, prompt)
+    response = await get_response(model, prompt)
     
     return extract_message(response)
 
