@@ -1,5 +1,8 @@
 from enum import Enum
+from typing import Literal
 from .hashable import HashableBaseModel
+
+MessageRoleType = Literal["system", "assistant", "user"]
 
 class MessageRole(str, Enum):
     user = "user"
