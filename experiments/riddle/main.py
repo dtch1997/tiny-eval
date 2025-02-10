@@ -20,7 +20,7 @@ async def main():
     replicates = range(1)
     riddler_model = Model.GPT_4o  # Using a more capable model for riddle generation
     solver_model = Model.CLAUDE_3_5_SONNET  # Using a different model family for solving
-    words = get_random_subset(n=100, seed=42)
+    words = get_random_subset(n=100, seed=0)
     
     # Generate configs
     configs = [

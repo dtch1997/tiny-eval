@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import hashlib
 
 from tiny_eval.task.base import Task, BaseTaskConfig
