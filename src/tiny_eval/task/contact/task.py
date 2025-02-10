@@ -1,12 +1,10 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Union
-from typing_extensions import Literal
-
+from typing import Dict, Any, List, Optional
 import hashlib
 
 from tiny_eval.task.base import Task, BaseTaskConfig
 from tiny_eval.core.constants import Model
-from tiny_eval.inference import build_inference_api, get_response
+from tiny_eval.inference import get_response
 from tiny_eval.inference.types import InferencePrompt
 from tiny_eval.core.messages import Message, MessageRole
 from .game import ContactGame, GameResult, Player, GameState

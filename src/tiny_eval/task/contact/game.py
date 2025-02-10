@@ -185,7 +185,7 @@ if __name__ == "__main__":
             else:
                 result = st.session_state.game_result
                 if st.session_state.game.state == GameState.CONTACT_CALLED:
-                    st.success(f"Game ended by contact call!")
+                    st.success("Game ended by contact call!")
                 else:
                     st.warning(f"Game ended - maximum turns ({st.session_state.game.max_turns}) reached!")
                 
