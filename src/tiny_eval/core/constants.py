@@ -18,6 +18,9 @@ CACHE_DIR = Path(os.getenv("CACHE_DIR", project_dir / "cache"))
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+HYPERBOLIC_BASE_URL = "https://api.hyperbolic.xyz/v1"
+HYPERBOLIC_API_KEY = os.getenv("HYPERBOLIC_API_KEY")
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 class Model(str, Enum):
@@ -38,6 +41,7 @@ class Model(str, Enum):
     # DeepSeek
     DEEPSEEK_CHAT = "deepseek/deepseek-chat"
     DEEPSEEK_R1 = "deepseek/deepseek-r1"
+    DEEPSEEK_R0 = "deepseek-ai/DeepSeek-R1-Zero"
     # Dolphin
     DOLPHIN = "cognitivecomputations/dolphin-mixtral-8x22b"
 

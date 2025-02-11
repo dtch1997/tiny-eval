@@ -1,13 +1,11 @@
-from openai import AsyncOpenAI
 from tiny_eval.core.constants import Model
 from tiny_eval.inference.interface import InferenceAPIInterface
 from tiny_eval.inference.openai.api import OpenAIInferenceAPI
 from tiny_eval.inference.openrouter.api import OpenRouterInferenceAPI
+from tiny_eval.inference.hyperbolic.api import HyperbolicInferenceAPI
 from tiny_eval.inference.data_models import InferenceParams, InferencePrompt
-from tiny_eval.core.constants import OPENAI_API_KEY
 from tiny_eval.core.messages import Message, MessageRole
 from typing import Union
-
 
 def build_inference_api(model: Union[str, Model]) -> InferenceAPIInterface:
     """
@@ -24,8 +22,10 @@ def build_inference_api(model: Union[str, Model]) -> InferenceAPIInterface:
 
     if model.value.startswith("openai/"):
         return OpenAIInferenceAPI()
+    elif model == Model.DEEPSEEK_R0:
+        # Only available on Hyperbolic
+        return HyperbolicInferenceAPI()
     else:
-        # Use OpenRouter for all non-OpenAI models
         return OpenRouterInferenceAPI()
 
 

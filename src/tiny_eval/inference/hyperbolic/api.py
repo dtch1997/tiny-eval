@@ -7,26 +7,25 @@ from tiny_eval.inference.data_models import (
     InferenceParams,
     InferenceResponse,
 )
-from tiny_eval.core.constants import OPENROUTER_BASE_URL, OPENROUTER_API_KEY
-from tiny_eval.inference.openai.api import _openai_chat_completion as _openrouter_chat_completion
+from tiny_eval.core.constants import HYPERBOLIC_BASE_URL, HYPERBOLIC_API_KEY
+from tiny_eval.inference.openai.api import _openai_chat_completion as _hyperbolic_chat_completion
 from tiny_eval.inference.utils.rate_limiter import AsyncRateLimiter
 
-class OpenRouterInferenceAPI(InferenceAPIInterface):
+class HyperbolicInferenceAPI(InferenceAPIInterface):
     """
-    Inference API for OpenRouter with rate limiting of 1500 requests per 10 seconds
+    Inference API for Hyperbolic with rate limiting of 600 requests per 60 secondss
     """
     def __init__(
         self,
         client: Optional[AsyncOpenAI] = None,
     ):
         self.client = client or AsyncOpenAI(
-            api_key=OPENROUTER_API_KEY,
-            base_url=OPENROUTER_BASE_URL,
+            api_key=HYPERBOLIC_API_KEY,
+            base_url=HYPERBOLIC_BASE_URL,
         )
     
-    # 1400 requests per 10 seconds
-    # see ./utils.py for how to check rate limit
-    @AsyncRateLimiter(requests=1400, window=10)
+    # 600 requests per 60 seconds
+    @AsyncRateLimiter(requests=10, window=60)
     async def __call__(
         self, 
         model: str,
@@ -34,7 +33,7 @@ class OpenRouterInferenceAPI(InferenceAPIInterface):
         params: InferenceParams,
     ) -> InferenceResponse:
         """
-        Make an inference call to OpenRouter API with rate limiting
+        Make an inference call to Hyperbolic API with rate limiting
         
         Args:
             model: The model identifier
@@ -44,7 +43,8 @@ class OpenRouterInferenceAPI(InferenceAPIInterface):
         Returns:
             InferenceResponse: The model's response
         """
-        return await _openrouter_chat_completion(
+
+        return await _hyperbolic_chat_completion(
             client=self.client,
             model=model,
             prompt=prompt,
