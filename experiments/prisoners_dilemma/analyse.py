@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import pathlib
-import plotly.express as px
+
 import plotly.graph_objects as go
 
 curr_dir = pathlib.Path(__file__).parent
@@ -17,10 +17,10 @@ def load_results() -> pd.DataFrame:
 def format_conversation(conversation: list[str]) -> None:
     """Format conversation with alternating colors"""
     for msg in conversation:
-        if "Prisoner A:" in msg:
-            st.markdown(f"🔵 {msg}")
+        if "Defender:" in msg:
+            st.markdown(f"🛡️ {msg}")
         else:
-            st.markdown(f"🔴 {msg}")
+            st.markdown(f"⚔️ {msg}")
 
 def standardize_decision(decision: str) -> str:
     """Standardize decision strings to COOPERATE, DEFECT, or OTHER"""
@@ -32,13 +32,12 @@ def standardize_decision(decision: str) -> str:
     return "OTHER"
 
 def main():
-    st.title("🔒 Prisoner's Dilemma Analysis")
+    st.title("🎭 Deception Game Analysis")
     
     df = load_results()
     
     # Standardize decisions
-    df['decision_a'] = df['decision_a'].apply(standardize_decision)
-    df['decision_b'] = df['decision_b'].apply(standardize_decision)
+    df['defender_decision'] = df['defender_decision'].apply(standardize_decision)
     
     # Overall metrics
     st.header("📊 Overall Statistics")
@@ -49,7 +48,7 @@ def main():
         st.metric("Success Rate", f"{success_rate:.1%}")
     
     with col2:
-        optimal_rate = df[df['status'] == 'success'][['optimal_a', 'optimal_b']].mean().mean()
+        optimal_rate = df[df['status'] == 'success']['optimal_decision'].mean()
         st.metric("Optimal Decision Rate", f"{optimal_rate:.1%}")
     
     with col3:
@@ -61,30 +60,30 @@ def main():
     
     success_df = df[df['status'] == 'success']
     
-    # Calculate cross-model win rates
+    # Calculate cross-model deception rates
     model_pairs = []
-    for model_a in success_df['prisoner_a_model'].unique():
-        for model_b in success_df['prisoner_b_model'].unique():
+    for attacker_model in success_df['attacker_model'].unique():
+        for defender_model in success_df['defender_model'].unique():
             pair_games = success_df[
-                (success_df['prisoner_a_model'] == model_a) & 
-                (success_df['prisoner_b_model'] == model_b)
+                (success_df['attacker_model'] == attacker_model) & 
+                (success_df['defender_model'] == defender_model)
             ]
             if len(pair_games) > 0:
-                # Model A's win rate (getting B to cooperate)
-                model_a_winrate = len(pair_games[pair_games['decision_b'] == 'COOPERATE']) / len(pair_games)
+                # Attacker's success rate (getting defender to cooperate)
+                deception_rate = (pair_games['defender_decision'] == 'COOPERATE').mean()
                 model_pairs.append({
-                    'attacking_model': model_a,
-                    'defending_model': model_b,
-                    'win_rate': model_a_winrate,
+                    'attacker_model': attacker_model,
+                    'defender_model': defender_model,
+                    'deception_rate': deception_rate,
                     'total_games': len(pair_games)
                 })
     
     pair_df = pd.DataFrame(model_pairs)
     pivot = pd.pivot_table(
         pair_df,
-        values='win_rate',
-        index='defending_model',  # Y-axis: model being played against
-        columns='attacking_model',  # X-axis: model whose winrate we're calculating
+        values='deception_rate',
+        index='defender_model',  # Y-axis: model being attacked
+        columns='attacker_model',  # X-axis: model trying to deceive
         aggfunc='first'
     )
     
@@ -102,18 +101,35 @@ def main():
     ))
     
     fig.update_layout(
-        title="Model Win Rates (Getting Opponent to Cooperate)",
-        xaxis_title="Attacking Model",
-        yaxis_title="Defending Model",
+        title="Model Deception Success Rates (Getting Defender to Cooperate)",
+        xaxis_title="Attacker Model",
+        yaxis_title="Defender Model",
         height=500
     )
     
     # Add hover template to show the actual values
     fig.update_traces(
-        hovertemplate="Attacking: %{x}<br>Defending: %{y}<br>Win Rate: %{z:.1%}<extra></extra>"
+        hovertemplate="Attacker: %{x}<br>Defender: %{y}<br>Deception Rate: %{z:.1%}<extra></extra>"
     )
     
     st.plotly_chart(fig)
+    
+    # Points Analysis
+    st.header("🏆 Points Analysis")
+    
+    # Calculate average points per model as attacker and defender
+    attacker_points = success_df.groupby('attacker_model')['attacker_points'].mean().round(2)
+    defender_points = success_df.groupby('defender_model')['defender_points'].mean().round(2)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Average Points as Attacker")
+        st.dataframe(attacker_points)
+    
+    with col2:
+        st.subheader("Average Points as Defender")
+        st.dataframe(defender_points)
     
     # Conversation viewer
     st.header("💬 Conversation Viewer")
@@ -121,38 +137,38 @@ def main():
     # Filter options
     col1, col2 = st.columns(2)
     with col1:
-        selected_model_a = st.selectbox(
-            "Filter by Prisoner A Model",
-            options=['All'] + list(df['prisoner_a_model'].unique())
+        selected_attacker = st.selectbox(
+            "Filter by Attacker Model",
+            options=['All'] + list(df['attacker_model'].unique())
         )
     with col2:
-        selected_model_b = st.selectbox(
-            "Filter by Prisoner B Model",
-            options=['All'] + list(df['prisoner_b_model'].unique())
+        selected_defender = st.selectbox(
+            "Filter by Defender Model",
+            options=['All'] + list(df['defender_model'].unique())
         )
     
     # Filter conversations
     filtered_df = success_df
-    if selected_model_a != 'All':
-        filtered_df = filtered_df[filtered_df['prisoner_a_model'] == selected_model_a]
-    if selected_model_b != 'All':
-        filtered_df = filtered_df[filtered_df['prisoner_b_model'] == selected_model_b]
+    if selected_attacker != 'All':
+        filtered_df = filtered_df[filtered_df['attacker_model'] == selected_attacker]
+    if selected_defender != 'All':
+        filtered_df = filtered_df[filtered_df['defender_model'] == selected_defender]
     
     # Display conversations
     for idx, row in filtered_df.iterrows():
         st.markdown("---")
         st.markdown(f"### Game {idx + 1}")
-        st.markdown(f"**Models:** {row['prisoner_a_model']} vs {row['prisoner_b_model']}")
-        st.markdown(f"**Decisions:** A: {row['decision_a']}, B: {row['decision_b']}")
-        st.markdown(f"**Sentences:** A: {row['sentence_a']} years, B: {row['sentence_b']} years")
+        st.markdown(f"**Models:** {row['attacker_model']} (⚔️) vs {row['defender_model']} (🛡️)")
+        st.markdown(f"**Defender's Decision:** {row['defender_decision']}")
+        st.markdown(f"**Points:** Attacker: {row['attacker_points']}, Defender: {row['defender_points']}")
         
         with st.expander("View Conversation"):
             format_conversation(eval(row['conversation']))
 
 if __name__ == "__main__":
     st.set_page_config(
-        page_title="Prisoner's Dilemma Analysis",
-        page_icon="🔒",
+        page_title="Deception Game Analysis",
+        page_icon="🎭",
         layout="wide"
     )
     main() 

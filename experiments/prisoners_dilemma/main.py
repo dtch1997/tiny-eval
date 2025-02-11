@@ -22,20 +22,20 @@ async def main():
     available_models = [
         Model.GPT_4o,
         Model.CLAUDE_3_5_SONNET,
-        Model.DEEPSEEK_R1,
+        # Model.DEEPSEEK_R1,
         Model.GPT_4o_mini
     ]
     
-    # Get all combinations of prisoner models
+    # Get all combinations of attacker and defender models
     model_pairs = list(product(available_models, available_models))
     
     # Generate configs
     configs = [
         PrisonersDilemmaConfig(
-            prisoner_a=model_a,
-            prisoner_b=model_b,
+            attacker=model_a,
+            defender=model_b,
             max_turns=5,
-            name=f"prisoner_a_{model_a.value}_prisoner_b_{model_b.value}_{replicate}".replace("/", "-")
+            name=f"attacker_{model_a.value}_defender_{model_b.value}_{replicate}".replace("/", "-")
         )
         for (model_a, model_b), replicate in product(model_pairs, replicates)
     ]
@@ -44,13 +44,13 @@ async def main():
     task = PrisonersDilemmaTask(cache_dir=cache_dir)
     
     # Run all configs with caching and progress bar
-    results = await task.run(configs, desc="Running Prisoner's Dilemma games")
+    results = await task.run(configs, desc="Running Asymmetric Prisoner's Dilemma games")
     
     # Save combined results
     df = pd.DataFrame(results)
     print("\nSample results:")
-    print(df[['prisoner_a_model', 'prisoner_b_model', 'decision_a', 'decision_b', 'optimal_a', 'optimal_b']].head())
-    print("\nOptimal decision rate:", df[df['status'] == 'success'][['optimal_a', 'optimal_b']].mean())
+    print(df[['attacker_model', 'defender_model', 'defender_decision', 'optimal_decision']].head())
+    print("\nOptimal decision rate:", df[df['status'] == 'success']['optimal_decision'].mean())
     print("\nErrors:", df['error'].unique())
     
     df.to_csv(results_dir / "results.csv", index=False)
