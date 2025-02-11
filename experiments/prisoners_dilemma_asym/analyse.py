@@ -22,6 +22,28 @@ def format_conversation(conversation: list[str]) -> None:
         else:
             st.markdown(f"⚔️ {msg}")
 
+def format_full_response(response_data: dict) -> None:
+    """Format a single full response with detailed information"""
+    role_icons = {
+        "defender": "🛡️",
+        "attacker": "⚔️"
+    }
+    
+    st.markdown(f"**Turn:** {response_data['turn']}")
+    st.markdown(f"**Role:** {role_icons[response_data['role']]} {response_data['role'].title()}")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Full Response:**")
+        st.text(response_data['full_response'])
+    
+    with col2:
+        st.markdown("**Extracted Content:**")
+        if 'extracted_message' in response_data:
+            st.text(response_data['extracted_message'])
+        elif 'extracted_decision' in response_data:
+            st.text(f"Decision: {response_data['extracted_decision']}")
+
 def standardize_decision(decision: str) -> str:
     """Standardize decision strings to COOPERATE, DEFECT, or OTHER"""
     decision = str(decision).upper().strip()
@@ -132,10 +154,10 @@ def main():
         st.dataframe(defender_points)
     
     # Conversation viewer
-    st.header("💬 Conversation Viewer")
+    st.header("💬 Conversation Analysis")
     
     # Filter options
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         selected_attacker = st.selectbox(
             "Filter by Attacker Model",
@@ -145,6 +167,11 @@ def main():
         selected_defender = st.selectbox(
             "Filter by Defender Model",
             options=['All'] + list(df['defender_model'].unique())
+        )
+    with col3:
+        view_mode = st.selectbox(
+            "View Mode",
+            options=['Simple Conversation', 'Full Responses']
         )
     
     # Filter conversations
@@ -162,8 +189,37 @@ def main():
         st.markdown(f"**Defender's Decision:** {row['defender_decision']}")
         st.markdown(f"**Points:** Attacker: {row['attacker_points']}, Defender: {row['defender_points']}")
         
-        with st.expander("View Conversation"):
-            format_conversation(eval(row['conversation']))
+        if view_mode == 'Simple Conversation':
+            with st.expander("View Conversation"):
+                format_conversation(eval(row['conversation']))
+        else:  # Full Responses
+            with st.expander("View Full Responses"):
+                try:
+                    full_responses = eval(row['full_responses'])
+                    for response in full_responses:
+                        st.markdown("---")
+                        format_full_response(response)
+                except Exception as e:
+                    st.error(f"Error displaying full responses: {str(e)}")
+                    st.markdown("Full response data may not be available for this game.")
+        
+        # Add option to view both side by side
+        if st.button(f"Compare Views for Game {idx + 1}", key=f"compare_{idx}"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("### Simple Conversation")
+                format_conversation(eval(row['conversation']))
+            
+            with col2:
+                st.markdown("### Full Responses")
+                try:
+                    full_responses = eval(row['full_responses'])
+                    for response in full_responses:
+                        st.markdown("---")
+                        format_full_response(response)
+                except Exception as e:
+                    st.error(f"Error displaying full responses: {str(e)}")
+                    st.markdown("Full response data may not be available for this game.")
 
 if __name__ == "__main__":
     st.set_page_config(
