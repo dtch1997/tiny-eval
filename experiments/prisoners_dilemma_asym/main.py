@@ -21,10 +21,12 @@ async def main():
     # Define available models
     available_models = [
         Model.GPT_4o,
-        Model.CLAUDE_3_5_SONNET,
+        # Model.CLAUDE_3_5_SONNET,
         # Model.DEEPSEEK_R1,
         Model.GPT_4o_mini,
         # Model.O1_mini,
+        Model.DOLPHIN, 
+        Model.LLAMA_3_3_70B_INSTRUCT
     ]
     
     # Get all combinations of attacker and defender models
