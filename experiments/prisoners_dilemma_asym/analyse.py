@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import pathlib
-
+import plotly.express as px
 import plotly.graph_objects as go
+import ast
 
 curr_dir = pathlib.Path(__file__).parent
 results_path = curr_dir / "results" / "results.csv"
@@ -53,8 +54,78 @@ def standardize_decision(decision: str) -> str:
         return "DEFECT"
     return "OTHER"
 
+def extract_final_reasoning(conversation_str: str) -> tuple[str, str]:
+    """
+    Extract the final reasoning from the conversation.
+    
+    Args:
+        conversation_str: String representation of the conversation list
+        
+    Returns:
+        tuple[str, str]: Attacker's and defender's final reasoning
+    """
+    try:
+        conversation = ast.literal_eval(conversation_str)
+        attacker_reasoning = ""
+        defender_reasoning = ""
+        
+        # Look for the last reasoning from each participant
+        for msg in reversed(conversation):
+            if "Reasoning:" in msg:
+                if "Attacker:" in msg and not attacker_reasoning:
+                    attacker_reasoning = msg.split("Reasoning:", 1)[1].strip()
+                elif "Defender:" in msg and not defender_reasoning:
+                    defender_reasoning = msg.split("Reasoning:", 1)[1].strip()
+            
+            if attacker_reasoning and defender_reasoning:
+                break
+                
+        return attacker_reasoning, defender_reasoning
+    except:
+        return "Error parsing conversation", "Error parsing conversation"
+
+def format_final_reasoning(row: pd.Series) -> None:
+    """Format the final reasoning from both participants"""
+    attacker_reasoning, defender_reasoning = extract_final_reasoning(row['conversation'])
+    
+    st.markdown("#### Attacker's Final Reasoning")
+    st.markdown(f"🔵 {attacker_reasoning}")
+    
+    st.markdown("#### Defender's Final Reasoning")
+    st.markdown(f"🔴 {defender_reasoning}")
+
+def format_conversation_with_decision(row: pd.Series) -> None:
+    """Format conversation and highlight the final decision"""
+    # Show full conversation first
+    conversation = ast.literal_eval(row['conversation'])
+    for msg in conversation:
+        if "Defender:" in msg:
+            st.markdown(f"🛡️ {msg}")
+        else:
+            st.markdown(f"⚔️ {msg}")
+    
+    # Get the full responses
+    full_responses = ast.literal_eval(row['full_responses'])
+    
+    # Find the defender's final decision response
+    final_response = next(
+        (r for r in full_responses 
+         if r['role'] == 'defender' and r['turn'] == 'final'),
+        None
+    )
+    
+    if final_response:
+        st.markdown("---")
+        st.markdown("### Final Decision")
+        st.markdown(f"**Defender's Full Response:**")
+        st.text(final_response['full_response'])
+        st.markdown(f"**Extracted Decision:** {row['defender_decision']}")
+        st.markdown(f"**Was this optimal?** {'Yes ✅' if row['optimal_decision'] else 'No ❌'}")
+    else:
+        st.error("Could not find defender's final decision response")
+
 def main():
-    st.title("🎭 Deception Game Analysis")
+    st.title("🔒 Prisoner's Dilemma Analysis (asymmetric)")
     
     df = load_results()
     
@@ -154,10 +225,10 @@ def main():
         st.dataframe(defender_points)
     
     # Conversation viewer
-    st.header("💬 Conversation Analysis")
+    st.header("💬 Game Analysis")
     
     # Filter options
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         selected_attacker = st.selectbox(
             "Filter by Attacker Model",
@@ -168,63 +239,27 @@ def main():
             "Filter by Defender Model",
             options=['All'] + list(df['defender_model'].unique())
         )
-    with col3:
-        view_mode = st.selectbox(
-            "View Mode",
-            options=['Simple Conversation', 'Full Responses']
-        )
     
     # Filter conversations
-    filtered_df = success_df
+    filtered_df = df[df['status'] == 'success']
     if selected_attacker != 'All':
         filtered_df = filtered_df[filtered_df['attacker_model'] == selected_attacker]
     if selected_defender != 'All':
         filtered_df = filtered_df[filtered_df['defender_model'] == selected_defender]
     
-    # Display conversations
+    # Display conversations and decisions
     for idx, row in filtered_df.iterrows():
         st.markdown("---")
         st.markdown(f"### Game {idx + 1}")
-        st.markdown(f"**Models:** {row['attacker_model']} (⚔️) vs {row['defender_model']} (🛡️)")
-        st.markdown(f"**Defender's Decision:** {row['defender_decision']}")
-        st.markdown(f"**Points:** Attacker: {row['attacker_points']}, Defender: {row['defender_points']}")
+        st.markdown(f"**Models:** Attacker: {row['attacker_model']} vs Defender: {row['defender_model']}")
         
-        if view_mode == 'Simple Conversation':
-            with st.expander("View Conversation"):
-                format_conversation(eval(row['conversation']))
-        else:  # Full Responses
-            with st.expander("View Full Responses"):
-                try:
-                    full_responses = eval(row['full_responses'])
-                    for response in full_responses:
-                        st.markdown("---")
-                        format_full_response(response)
-                except Exception as e:
-                    st.error(f"Error displaying full responses: {str(e)}")
-                    st.markdown("Full response data may not be available for this game.")
-        
-        # Add option to view both side by side
-        if st.button(f"Compare Views for Game {idx + 1}", key=f"compare_{idx}"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("### Simple Conversation")
-                format_conversation(eval(row['conversation']))
-            
-            with col2:
-                st.markdown("### Full Responses")
-                try:
-                    full_responses = eval(row['full_responses'])
-                    for response in full_responses:
-                        st.markdown("---")
-                        format_full_response(response)
-                except Exception as e:
-                    st.error(f"Error displaying full responses: {str(e)}")
-                    st.markdown("Full response data may not be available for this game.")
+        with st.expander("View Conversation and Decision"):
+            format_conversation_with_decision(row)
 
 if __name__ == "__main__":
     st.set_page_config(
-        page_title="Deception Game Analysis",
-        page_icon="🎭",
+        page_title="Prisoner's Dilemma Analysis",
+        page_icon="🔒",
         layout="wide"
     )
     main() 
