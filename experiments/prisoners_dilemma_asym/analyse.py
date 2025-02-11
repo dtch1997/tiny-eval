@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import pathlib
-import plotly.express as px
+
 import plotly.graph_objects as go
 import ast
 
@@ -81,7 +81,7 @@ def extract_final_reasoning(conversation_str: str) -> tuple[str, str]:
                 break
                 
         return attacker_reasoning, defender_reasoning
-    except:
+    except Exception:
         return "Error parsing conversation", "Error parsing conversation"
 
 def format_final_reasoning(row: pd.Series) -> None:
@@ -117,7 +117,7 @@ def format_conversation_with_decision(row: pd.Series) -> None:
     if final_response:
         st.markdown("---")
         st.markdown("### Final Decision")
-        st.markdown(f"**Defender's Full Response:**")
+        st.markdown("**Defender's Full Response:**")
         st.text(final_response['full_response'])
         st.markdown(f"**Extracted Decision:** {row['defender_decision']}")
         st.markdown(f"**Was this optimal?** {'Yes ✅' if row['optimal_decision'] else 'No ❌'}")
