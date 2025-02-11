@@ -16,7 +16,7 @@ cache_dir.mkdir(parents=True, exist_ok=True)
 
 async def main():
     # Configure experiment parameters
-    replicates = range(5)
+    replicates = range(25)
     
     # Define available models
     available_models = [
@@ -25,8 +25,8 @@ async def main():
         # Model.DEEPSEEK_R1,
         Model.GPT_4o_mini,
         # Model.O1_mini,
-        Model.DOLPHIN, 
-        Model.LLAMA_3_3_70B_INSTRUCT
+        # Model.DOLPHIN, 
+        # Model.LLAMA_3_3_70B_INSTRUCT
     ]
     
     # Get all combinations of attacker and defender models
