@@ -4,7 +4,7 @@ import json
 from typing import Dict, Any
 from dataclasses import dataclass
 
-from tiny_eval.task.base import Task, BaseTaskConfig
+from tiny_eval.task.base import Task, BaseTaskConfig, TaskResult
 
 # Test fixtures
 @dataclass
@@ -23,13 +23,16 @@ class MockTask(Task[MockConfig, Dict[str, Any]]):
         super().__init__(cache_dir)
         self.run_count = 0  # Track number of actual runs
     
-    async def run_single(self, config: MockConfig) -> Dict[str, Any]:
+    async def run_single(self, config: MockConfig) -> TaskResult[Dict[str, Any]]:
         self.run_count += 1
-        return {
-            "name": config.name,
-            "value": config.value,
-            "processed": True
-        }
+        return TaskResult(
+            status="success",
+            data={
+                "name": config.name,
+                "value": config.value,
+                "processed": True
+            }
+        )
 
 @pytest.fixture
 def temp_cache_dir(tmp_path):
@@ -55,8 +58,9 @@ async def test_task_without_cache():
     results = await task.run(configs)
     
     assert len(results) == 1
-    assert results[0]["name"] == "test"
-    assert results[0]["value"] == 1
+    assert results[0].status == "success"
+    assert results[0].data["name"] == "test"
+    assert results[0].data["value"] == 1
     assert task.run_count == 1  # Verify task was actually run
 
 @pytest.mark.asyncio
@@ -69,19 +73,24 @@ async def test_task_with_cache(temp_cache_dir, mock_configs):
     assert task.run_count == 2  # Both tasks should have run
     
     # Verify cache files were created
-    for config in mock_configs:
+    for config, result in zip(mock_configs, results1):
         cache_path = temp_cache_dir / f"{config.get_id()}.json"
         assert cache_path.exists()
         with open(cache_path) as f:
             cached_data = json.load(f)
-            assert cached_data["name"] == config.name
-            assert cached_data["value"] == config.value
+            assert cached_data["status"] == "success"
+            assert cached_data["data"]["name"] == config.name
+            assert cached_data["data"]["value"] == config.value
     
     # Second run - should use cached results
     task.run_count = 0  # Reset counter
     results2 = await task.run(mock_configs)
     assert task.run_count == 0  # No tasks should have run
-    assert results1 == results2  # Results should be identical
+    
+    # Compare results
+    for r1, r2 in zip(results1, results2):
+        assert r1.status == r2.status
+        assert r1.data == r2.data
 
 @pytest.mark.asyncio
 async def test_partial_cache(temp_cache_dir):
@@ -100,8 +109,8 @@ async def test_partial_cache(temp_cache_dir):
     
     assert task.run_count == 1  # Only config2 should have run
     assert len(results) == 2
-    assert results[0]["name"] == "test1"
-    assert results[1]["name"] == "test2"
+    assert results[0].data["name"] == "test1"
+    assert results[1].data["name"] == "test2"
 
 @pytest.mark.asyncio
 async def test_cache_directory_creation():
@@ -129,5 +138,25 @@ async def test_invalid_cache_handling(temp_cache_dir):
     # Should run task despite cache file existing
     results = await task.run([config])
     assert task.run_count == 1
-    assert results[0]["name"] == "test"
-    assert results[0]["value"] == 1 
+    assert results[0].status == "success"
+    assert results[0].data["name"] == "test"
+    assert results[0].data["value"] == 1
+
+@pytest.mark.asyncio
+async def test_error_result():
+    """Test handling of error results"""
+    class ErrorTask(Task[MockConfig, Dict[str, Any]]):
+        async def run_single(self, config: MockConfig) -> TaskResult[Dict[str, Any]]:
+            return TaskResult(
+                status="error",
+                error="Test error message"
+            )
+    
+    task = ErrorTask()
+    config = MockConfig(name="test", value=1)
+    results = await task.run([config])
+    
+    assert len(results) == 1
+    assert results[0].status == "error"
+    assert results[0].error == "Test error message"
+    assert results[0].data is None 

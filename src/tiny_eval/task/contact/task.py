@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import hashlib
 
-from tiny_eval.task.base import Task, BaseTaskConfig
+from tiny_eval.task.base import Task, BaseTaskConfig, TaskResult
 from tiny_eval.core.constants import Model
 from tiny_eval.inference import get_response
 from tiny_eval.inference.data_models import InferencePrompt
@@ -149,7 +149,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
         
         return bob_guess, dean_guess
 
-    async def run_single(self, config: ContactTaskConfig) -> Dict[str, Any]:
+    async def run_single(self, config: ContactTaskConfig) -> TaskResult[Dict[str, Any]]:
         """Run a single instance of the Contact task"""
         game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
         full_interactions: Dict[str, List[Any]] = {
@@ -186,11 +186,7 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                     )
                 
                 msg = self.extract_message(response)
-                
                 game.add_turn(msg, None)
-                
-                # Record interactions...
-                # ... (recording code remains similar)
             
             # Handle game completion
             if game.state == GameState.CONTACT_CALLED:
@@ -207,37 +203,40 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                     contact_declared=False
                 )
             
-            return {
-                "status": "success",
-                "error": None,
-                "winner": result.winner,
-                "turns": result.turns_taken,
-                "conversation": game.conversation_history,
-                "secret_word": config.secret_word,
-                "name": config.name,
-                "alice_model": config.alice.value,
-                "bob_model": config.bob.value,
-                "dean_model": config.dean.value,
-                "contact_declared": result.contact_declared,
-                "full_interactions": full_interactions,
-                "bob_guess": result.bob_guess,
-                "dean_guess": result.dean_guess
-            }
+            return TaskResult(
+                status="success",
+                data={
+                    "winner": result.winner,
+                    "turns": result.turns_taken,
+                    "conversation": game.conversation_history,
+                    "secret_word": config.secret_word,
+                    "name": config.name,
+                    "alice_model": config.alice.value,
+                    "bob_model": config.bob.value,
+                    "dean_model": config.dean.value,
+                    "contact_declared": result.contact_declared,
+                    "full_interactions": full_interactions,
+                    "bob_guess": result.bob_guess,
+                    "dean_guess": result.dean_guess
+                }
+            )
             
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "secret_word": config.secret_word,
-                "name": config.name,
-                "alice_model": config.alice.value,
-                "bob_model": config.bob.value,
-                "dean_model": config.dean.value,
-                "conversation": game.conversation_history,
-                "turns": game.turn_count,
-                "contact_declared": False,
-                "full_interactions": full_interactions
-            } 
+            return TaskResult(
+                status="error",
+                error=str(e),
+                data={
+                    "secret_word": config.secret_word,
+                    "name": config.name,
+                    "alice_model": config.alice.value,
+                    "bob_model": config.bob.value,
+                    "dean_model": config.dean.value,
+                    "conversation": game.conversation_history,
+                    "turns": game.turn_count,
+                    "contact_declared": False,
+                    "full_interactions": full_interactions
+                }
+            )
 
 async def get_player_response(
     model: Model,
