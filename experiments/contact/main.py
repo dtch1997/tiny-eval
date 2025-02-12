@@ -39,7 +39,7 @@ async def main():
     replicates = range(3)
     player_model = Model.DEEPSEEK_R1
     overseer_model = Model.GPT_4o_mini
-    words = get_random_subset(n=10, seed=42)
+    words = get_random_subset(n=2, seed=42)
     
     # Generate configs
     configs = [
@@ -70,9 +70,7 @@ async def main():
     df.to_csv(results_dir / "results.csv", index=False)
     
     # Save summary results with key metrics
-    summary_columns = ['name', 'status', 'winner', 'turns', 'secret_word', 
-                      'contact_declared', 'bob_guess', 'dean_guess']
-    df[summary_columns].to_csv(results_dir / "results.csv", index=False)
+    df.to_csv(results_dir / "results.csv", index=False)
     
     print(df.head())
     print(df['error'].unique())

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 import hashlib
+import datetime
 
 from tiny_eval.task.base import Task, BaseTaskConfig, TaskResult
 from tiny_eval.core.constants import Model
@@ -129,9 +130,68 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
             except IndexError:
                 return response.strip()
 
-    async def get_final_guesses(self, bob_model: str, dean_model: str, 
-                              conversation: List[str]) -> tuple[str, str]:
-        """Get final guesses from Bob and Dean"""
+    def record_interaction(self, interactions: Dict[str, List[Dict]], 
+                         player: str, 
+                         interaction_type: str,
+                         raw_response: str | None = None,
+                         extracted_message: str | None = None,
+                         content: str | None = None) -> None:
+        """Record an interaction in the full_interactions log"""
+        interaction = {
+            "type": interaction_type,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        if raw_response is not None:
+            interaction["raw_response"] = raw_response
+        if extracted_message is not None:
+            interaction["extracted_message"] = extracted_message
+        if content is not None:
+            interaction["content"] = content
+            
+        if player not in interactions:
+            interactions[player] = []
+        interactions[player].append(interaction)
+
+    async def get_player_response(self, 
+                                model: Model,
+                                system_prompt: str,
+                                conversation: List[str],
+                                interactions: Dict[str, List[Dict]],
+                                player: str,
+                                user_message: Optional[str] = None) -> str:
+        """Get response from a player with appropriate system prompt and record interaction"""
+        messages = [Message(role=MessageRole.system, content=system_prompt)]
+        
+        # Add conversation history
+        for msg in conversation:
+            messages.append(Message(role=MessageRole.assistant, content=msg))
+            
+        if user_message:
+            messages.append(Message(role=MessageRole.user, content=user_message))
+            
+        prompt = InferencePrompt(messages=messages)
+        raw_response = await get_response(model, prompt)
+        extracted_message = self.extract_message(raw_response)
+        
+        # Record the interaction
+        self.record_interaction(
+            interactions=interactions,
+            player=player,
+            interaction_type="assistant",
+            raw_response=raw_response,
+            extracted_message=extracted_message
+        )
+        
+        return extracted_message
+
+    async def get_final_guesses(self, 
+                              bob_model: Model, 
+                              dean_model: Model,
+                              conversation: List[str],
+                              interactions: Dict[str, List[Dict]]) -> tuple[str, str]:
+        """Get and record final guesses from Bob and Dean"""
+        # Get Bob's final guess
         bob_prompt = self.build_prompt(
             system=self.BOB_PROMPT,
             conversation=conversation,
@@ -140,19 +200,37 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
         bob_response = await get_response(bob_model, bob_prompt)
         bob_guess = self.extract_message(bob_response)
         
+        self.record_interaction(
+            interactions=interactions,
+            player="bob",
+            interaction_type="final_guess",
+            raw_response=bob_response,
+            content=bob_guess
+        )
+        
+        # Get Dean's guess
         dean_prompt = self.build_prompt(
             system=self.DEAN_PROMPT,
-            conversation=conversation
+            conversation=conversation,
+            user_message=self.FINAL_GUESS_PROMPT
         )
         dean_response = await get_response(dean_model, dean_prompt)
         dean_guess = self.extract_message(dean_response)
+        
+        self.record_interaction(
+            interactions=interactions,
+            player="dean",
+            interaction_type="final_guess", 
+            raw_response=dean_response,
+            content=dean_guess
+        )
         
         return bob_guess, dean_guess
 
     async def run_single(self, config: ContactTaskConfig) -> TaskResult[Dict[str, Any]]:
         """Run a single instance of the Contact task"""
         game = ContactGame(secret_word=config.secret_word, max_turns=config.max_turns)
-        full_interactions: Dict[str, List[Any]] = {
+        full_interactions: Dict[str, List[Dict[str, Any]]] = {
             "alice": [],
             "bob": [],
             "dean": []
@@ -160,10 +238,12 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
         
         try:
             # First turn - Alice starts
-            alice_msg = await get_player_response(
+            alice_msg = await self.get_player_response(
                 config.alice,
                 self.ALICE_PROMPT.format(secret_word=config.secret_word),
-                [],
+                game.conversation_history,
+                full_interactions,
+                "alice",
                 "Please start the game by sending your first message."
             )
             game.add_turn(alice_msg, None)
@@ -173,34 +253,40 @@ class ContactTask(Task[ContactTaskConfig, Dict[str, Any]]):
                 current_player = game.current_player
                 
                 if current_player == Player.BOB:
-                    response = await get_player_response(
+                    msg = await self.get_player_response(
                         config.bob,
                         self.BOB_PROMPT,
-                        game.conversation_history
+                        game.conversation_history,
+                        full_interactions,
+                        "bob"
                     )
                 else:  # ALICE's turn
-                    response = await get_player_response(
+                    msg = await self.get_player_response(
                         config.alice,
                         self.ALICE_PROMPT.format(secret_word=config.secret_word),
-                        game.conversation_history
+                        game.conversation_history,
+                        full_interactions,
+                        "alice"
                     )
                 
-                msg = self.extract_message(response)
                 game.add_turn(msg, None)
             
             # Handle game completion
             if game.state == GameState.CONTACT_CALLED:
                 bob_guess, dean_guess = await self.get_final_guesses(
-                    config.bob.value,
-                    config.dean.value,
-                    game.conversation_history
+                    config.bob,
+                    config.dean,
+                    game.conversation_history,
+                    full_interactions
                 )
                 result = game.evaluate_game(bob_guess, dean_guess)
             else:
                 result = GameResult(
                     winner="none",
                     turns_taken=game.turn_count,
-                    contact_declared=False
+                    contact_declared=False,
+                    bob_guess=None,
+                    dean_guess=None
                 )
             
             return TaskResult(

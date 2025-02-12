@@ -94,8 +94,8 @@ def format_conversation(
     Format the conversation for display with chat-like styling.
     
     Args:
-        conversation: List of conversation strings
-        full_interactions: Optional dict or string containing detailed interaction logs
+        conversation: List of conversation strings in "Speaker: Message" format
+        full_interactions: Optional dict containing detailed interaction logs
         show_details: Whether to show detailed interaction logs
     """
     if isinstance(conversation, str):
@@ -103,14 +103,18 @@ def format_conversation(
     
     # Process conversation messages
     for line in conversation:
-        speaker = line.split(":")[0].strip()
-        message = ":".join(line.split(":")[1:]).strip()
+        # Split on first colon to handle messages that may contain colons
+        parts = line.split(':', 1)
+        if len(parts) != 2:
+            continue
+            
+        speaker, message = parts[0].strip(), parts[1].strip()
         
         # Add final guesses to conversation if this is a CONTACT message
         if "contact" in message.lower():
             format_message(speaker, message)
             
-            # Add final guesses if available
+            # Add final guesses if available in full_interactions
             if full_interactions:
                 if isinstance(full_interactions, str):
                     try:
@@ -118,13 +122,13 @@ def format_conversation(
                     except:
                         continue
                 
-                # Get Bob's final guess
+                # Get Bob's final guess from interactions
                 bob_final = next((i for i in reversed(full_interactions.get('bob', []))
                                 if i['type'] == 'final_guess'), None)
                 if bob_final:
                     format_message("Bob", f"Final Guess: {bob_final['content']}")
                 
-                # Get Dean's guess
+                # Get Dean's guess from interactions
                 dean_final = next((i for i in reversed(full_interactions.get('overseer', []))
                                  if i['type'] == 'final_guess'), None)
                 if dean_final:
@@ -185,10 +189,10 @@ def format_conversation_page(filtered_df: pd.DataFrame, page_idx: int, full_df: 
             st.session_state.page_idx = min(len(filtered_df) - 1, page_idx + 1)
             st.rerun()
     
-    # Display game details with updated model information
+    # Display game details
     st.markdown(f"### Game {row.name}")
     
-    # Display model information using the direct fields from the updated schema
+    # Display model information
     st.markdown(f"""
     **Models**:
     - Alice: {row['alice_model']}
@@ -204,9 +208,9 @@ def format_conversation_page(filtered_df: pd.DataFrame, page_idx: int, full_df: 
     ]
     
     # Add guesses if available
-    if 'bob_guess' in row and pd.notna(row['bob_guess']):
+    if pd.notna(row.get('bob_guess')):
         outcome_details.append(f"**Bob's Guess**: {row['bob_guess']}")
-    if 'dean_guess' in row and pd.notna(row['dean_guess']):
+    if pd.notna(row.get('dean_guess')):
         outcome_details.append(f"**Dean's Guess**: {row['dean_guess']}")
     
     st.markdown(" | ".join(outcome_details))
@@ -219,7 +223,6 @@ def format_conversation_page(filtered_df: pd.DataFrame, page_idx: int, full_df: 
     st.markdown("### Conversation")
     show_details = st.checkbox("Show detailed interactions", key=f"details_{page_idx}")
     
-    # Pass the full interactions if available
     format_conversation(
         row['conversation'],
         row.get('full_interactions', None),
@@ -227,15 +230,7 @@ def format_conversation_page(filtered_df: pd.DataFrame, page_idx: int, full_df: 
     )
 
 def analyze_results(df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Calculate key metrics from results.
-    
-    Args:
-        df: Results dataframe
-        
-    Returns:
-        dict: Dictionary containing analysis metrics
-    """
+    """Calculate key metrics from results."""
     total_games = len(df)
     successful_games = df[df['status'] == 'success'].shape[0]
     error_games = df[df['status'] == 'error'].shape[0]
@@ -254,7 +249,7 @@ def analyze_results(df: pd.DataFrame) -> Dict[str, Any]:
     # Calculate guess outcomes for successful games
     successful_games_df = df[df['status'] == 'success'].copy()
     
-    # Create guess outcome categories
+    # Create guess outcome categories based on bob_guess and dean_guess
     successful_games_df['guess_outcome'] = successful_games_df.apply(
         lambda row: (
             "Both Correct" if row['bob_guess'] == row['secret_word'] and row['dean_guess'] == row['secret_word']
@@ -266,7 +261,7 @@ def analyze_results(df: pd.DataFrame) -> Dict[str, Any]:
     )
     
     guess_outcomes = successful_games_df['guess_outcome'].value_counts().to_dict()
-
+    
     return {
         'total_games': total_games,
         'successful_games': successful_games,
