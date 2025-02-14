@@ -2,13 +2,18 @@
 name = "tiny-eval"
 version = "0.1.0"
 description = "TinyEval: A tiny evaluation framework for language models"
-authors = [
-    {name = "Daniel Tan", email = "dtch1997@users.noreply.github.com"},
+authors = [{ name = "Daniel Tan", email = "dtch1997@users.noreply.github.com" }]
+dependencies = [
+    "openrouter>=1.0",
+    "python-dotenv>=1.0.1",
+    "openai>=1.60.1",
+    "ipykernel>=6.29.5",
+    "backoff>=2.2.1",
+    "fireworks-ai>=0.15.12",
 ]
-dependencies = ["openrouter>=1.0", "python-dotenv>=1.0.1", "openai>=1.60.1", "ipykernel>=6.29.5", "backoff>=2.2.1", "fireworks-ai>=0.15.12"]
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
 [project.optional-dependencies]
 experiments = [
@@ -18,11 +23,7 @@ experiments = [
     "seaborn>=0.13.2",
     "plotly>=6.0.0",
 ]
-dev = [
-    "pytest>=8.3.4",
-    "pytest-asyncio>=0.25.3",
-    "pyright>=1.1.393",
-]
+dev = ["pytest>=8.3.4", "pytest-asyncio>=0.25.3", "pyright>=1.1.393"]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
@@ -30,3 +31,6 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.semantic_release]
+version_variable = ["pyproject.toml:version"]
