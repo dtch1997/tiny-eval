@@ -62,7 +62,7 @@ jobs:
           fetch-depth: 0
       - uses: pdm-project/setup-pdm@v4
         with:
-          cache: true
+          cache: false
           python-version: "3.12"
       - name: build
         run: pdm build
