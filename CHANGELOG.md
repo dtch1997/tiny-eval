@@ -2,6 +2,21 @@
 
 
 
+## v0.3.0 (2025-02-14)
+
+### Chore
+
+* chore: run tests in ci ([`fb9f684`](https://github.com/dtch1997/tiny-eval/commit/fb9f6842cda4ea037c47614f0d95b88164d2a96f))
+
+### Feature
+
+* feat: bump version ([`28ad9cb`](https://github.com/dtch1997/tiny-eval/commit/28ad9cb5c9a758ea73cc88c9e74216e166c9f28d))
+
+### Unknown
+
+* update ([`e3b1928`](https://github.com/dtch1997/tiny-eval/commit/e3b192802fef56a1de83611904c0550873f1dc40))
+
+
 ## v0.2.0 (2025-02-14)
 
 ### Feature
