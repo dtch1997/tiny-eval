@@ -33,4 +33,4 @@ build-backend = "pdm.backend"
 distribution = true
 
 [tool.semantic_release]
-version_variable = ["pyproject.toml:version"]
+version_toml = ["pyproject.toml:project.version"]
