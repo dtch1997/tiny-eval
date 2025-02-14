@@ -2,6 +2,59 @@
 
 
 
+## v0.2.0 (2025-02-14)
+
+### Feature
+
+* feat: version bump ([`066f9f1`](https://github.com/dtch1997/tiny-eval/commit/066f9f1be9a6a99a77edd7456f51138b865296b9))
+
+### Unknown
+
+* update ([`d6394d6`](https://github.com/dtch1997/tiny-eval/commit/d6394d6f1d7a32aabab67885af778f42a193e321))
+
+* update ([`1204262`](https://github.com/dtch1997/tiny-eval/commit/120426292293f0aaedb1c2deb830a03500e8080c))
+
+* update ([`7072392`](https://github.com/dtch1997/tiny-eval/commit/707239290ab0554d76a79278b4c846ec15c0ee80))
+
+* update ([`6df945a`](https://github.com/dtch1997/tiny-eval/commit/6df945ab1c5fe6dc134309cf1850e7fcaa3bf8ae))
+
+* refactor ([`da1bea5`](https://github.com/dtch1997/tiny-eval/commit/da1bea54b7a0e11616013adf641eb944c9caec75))
+
+* update ([`83853e0`](https://github.com/dtch1997/tiny-eval/commit/83853e02fdcfadbe9f8d3af68a72f964e4678a1f))
+
+* update ([`f1cbe4a`](https://github.com/dtch1997/tiny-eval/commit/f1cbe4a2ed52fccc646043be2ba74cdc1b6da09d))
+
+* simplify prompt ([`a715ecf`](https://github.com/dtch1997/tiny-eval/commit/a715ecf7e7ecfc7731f4c512450582130fb83eb2))
+
+* simplify prompt ([`69e6e19`](https://github.com/dtch1997/tiny-eval/commit/69e6e19bc11814d739c9f1848383121e339b7f3f))
+
+* update rules ([`16990b6`](https://github.com/dtch1997/tiny-eval/commit/16990b6b809d6b3e80b57cb5c1da3fa7e30d1a79))
+
+* re-add original setting ([`b2b3a2b`](https://github.com/dtch1997/tiny-eval/commit/b2b3a2baa526482094a48fe8377727e77a8690cb))
+
+* move to different directory ([`dd6705f`](https://github.com/dtch1997/tiny-eval/commit/dd6705fc8b1b646a5a0b633cd5522ffb19c8797b))
+
+* update ([`fe71cf8`](https://github.com/dtch1997/tiny-eval/commit/fe71cf891d15196697505605f396760f3c9d80de))
+
+* add prisoner&#39;s dilemma task ([`b23a8c6`](https://github.com/dtch1997/tiny-eval/commit/b23a8c6612b0e05bd1e27cbd10f796be3b8bc682))
+
+* hyperbolic router, story task ([`472f20c`](https://github.com/dtch1997/tiny-eval/commit/472f20c37854fc7d04f91b33ac148f308421d8c5))
+
+* update ([`b18cd06`](https://github.com/dtch1997/tiny-eval/commit/b18cd067ec79e404bbb69377f983728d562a6d77))
+
+* update ([`1d906c6`](https://github.com/dtch1997/tiny-eval/commit/1d906c627ba12ca83c13a826cf881207f0033aeb))
+
+* update ([`4f84868`](https://github.com/dtch1997/tiny-eval/commit/4f84868aeb43512be117c3c366306754c78fc0e3))
+
+* refactor ([`8ceb95d`](https://github.com/dtch1997/tiny-eval/commit/8ceb95d260383afc589831863aa1d76112cdbfd0))
+
+* update ([`706bc7d`](https://github.com/dtch1997/tiny-eval/commit/706bc7d187b1b9cd16dfaa356deaf7c7ae2a32c4))
+
+* update ([`3ca8afb`](https://github.com/dtch1997/tiny-eval/commit/3ca8afb2bb35ce9690b873f58d5e160549bff948))
+
+* update ([`f6be47c`](https://github.com/dtch1997/tiny-eval/commit/f6be47ce57afd8c64ef2d3e336117d3b0a32d32d))
+
+
 ## v0.1.0 (2025-02-10)
 
 ### Chore
