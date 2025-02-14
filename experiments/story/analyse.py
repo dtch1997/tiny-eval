@@ -3,6 +3,8 @@ import pandas as pd
 import pathlib
 import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.express as px
+import numpy as np
 
 # Setup paths
 curr_dir = pathlib.Path(__file__).parent
@@ -15,59 +17,125 @@ def load_data() -> pd.DataFrame:
         st.stop()
         
     df = pd.read_csv(results_path)
+    
+    # Convert TaskResult data structure
+    if 'data' in df.columns:
+        # Expand the data column
+        data_df = pd.json_normalize(df['data'].apply(eval))
+        # Drop the original data column and combine with status and error
+        df = pd.concat([df[['status', 'error']], data_df], axis=1)
+    
     # Convert boolean columns if present
     if 'is_correct' in df.columns:
         df['is_correct'] = df['is_correct'].astype(bool)
     return df
 
-def create_performance_heatmap(df: pd.DataFrame) -> plt.Figure:
+def create_performance_plot(df: pd.DataFrame) -> plt.Figure:
     """
-    Create a heatmap showing success rates between storyteller and guesser models
+    Create a bar plot showing success rates between storyteller and guesser models with error bars
     
     Args:
         df: DataFrame containing the results
         
     Returns:
-        matplotlib.figure.Figure: The heatmap figure
+        matplotlib.figure.Figure: The bar plot figure
     """
     # Filter for successful attempts only
     success_df = df[df['status'] == 'success']
     
-    # Create pivot table of success rates
-    pivot = pd.pivot_table(
-        success_df,
-        values='is_correct',
-        index='storyteller_model',
-        columns='guesser_model',
-        aggfunc='mean'
-    )
+    # Calculate statistics for each model combination
+    stats = []
+    for storyteller in success_df['storyteller_model'].unique():
+        for guesser in success_df['guesser_model'].unique():
+            data = success_df[
+                (success_df['storyteller_model'] == storyteller) & 
+                (success_df['guesser_model'] == guesser)
+            ]['is_correct']
+            
+            if len(data) > 0:
+                mean = data.mean()
+                stderr = data.std() / np.sqrt(len(data))
+                stats.append({
+                    'storyteller_model': storyteller,
+                    'guesser_model': guesser,
+                    'mean': mean,
+                    'stderr': stderr,
+                    'count': len(data)
+                })
     
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=(12, 12))
+    stats_df = pd.DataFrame(stats)
     
-    # Create heatmap
-    sns.heatmap(
-        pivot,
-        annot=True,  # Show values in cells
-        fmt='.1%',   # Format as percentages
-        cmap='RdYlGn',  # Red to Yellow to Green colormap
-        vmin=0,
-        vmax=1,
-        cbar_kws={'label': 'Success Rate'},
-        ax=ax,
-        square=True
-    )
+    # Create figure
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Set up bar positions
+    guessers = stats_df['guesser_model'].unique()
+    storytellers = stats_df['storyteller_model'].unique()
+    x = np.arange(len(guessers))
+    width = 0.8 / len(storytellers)  # Adjust bar width based on number of storytellers
+    
+    # Plot bars for each storyteller
+    for i, storyteller in enumerate(storytellers):
+        storyteller_data = stats_df[stats_df['storyteller_model'] == storyteller]
+        
+        # Plot bars with error bars
+        bars = ax.bar(
+            x + i * width - (len(storytellers)-1) * width/2, 
+            storyteller_data['mean'],
+            width,
+            label=f'Storyteller: {storyteller}',
+            yerr=storyteller_data['stderr'],
+            capsize=5
+        )
+        
+        # Add value labels on top of bars
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width()/2,
+                height,
+                f'{height:.1%}',
+                ha='center',
+                va='bottom',
+                size=8
+            )
     
     # Customize appearance
-    plt.title('Model Performance Matrix', pad=10)
-    plt.xlabel('Guesser Model', labelpad=10)
-    plt.ylabel('Storyteller Model', labelpad=10)
+    ax.set_ylabel('Success Rate')
+    ax.set_xlabel('Guesser Model')
+    ax.set_title('Model Performance by Storyteller-Guesser Pairs\n(mean ± standard error)')
+    ax.set_xticks(x)
+    ax.set_xticklabels(guessers, rotation=45, ha='right')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+    ax.set_ylim(0, 1)  # Set y-axis from 0 to 1
     
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45, ha='right')
+    # Format y-axis as percentages
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+    
     plt.tight_layout()
     
     return fig
+
+def format_story(story: str) -> None:
+    """Display a story with proper text wrapping"""
+    st.markdown(
+        f"""
+        <div style="
+            white-space: pre-wrap;
+            background-color: var(--st-color-background-secondary);
+            border: 1px solid var(--st-color-border-light);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Source Code Pro', monospace;
+            line-height: 1.5;
+            color: var(--st-color-text);
+        ">
+        {story}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def main():
     st.title("📚 Story Concept Game!")
@@ -108,17 +176,18 @@ def main():
             st.metric("Total Stories", total_stories)
             
         st.markdown("### 🎯 Model Performance Matrix")
-        st.markdown("This heatmap shows how well each guesser model performs at identifying concepts in stories created by different storyteller models:")
+        st.markdown("This chart shows how well each guesser model performs at identifying concepts in stories created by different storyteller models:")
         
-        # Create and display heatmap
-        fig = create_performance_heatmap(df)
+        # Create and display performance plot
+        fig = create_performance_plot(df)
         st.pyplot(fig)
         
         st.markdown("""
-        **How to read the heatmap:**
-        - Each cell shows the success rate of a guesser model (columns) identifying concepts in stories by a storyteller model (rows)
-        - Darker green indicates higher success rates
-        - Darker red indicates lower success rates
+        **How to read the chart:**
+        - Each group shows the success rate for a storyteller model
+        - Different colored bars represent different guesser models
+        - Higher bars indicate better performance
+        - Success rate is the percentage of correctly guessed concepts
         """)
     
     # Initialize session state for revealed stories
@@ -176,7 +245,7 @@ def main():
         st.markdown(f"### Story #{idx + 1}")
         
         # Display the story
-        st.markdown(f"```\n{row['story']}\n```")
+        format_story(row['story'])
         
         col1, col2 = st.columns([1, 4])
         

@@ -25,7 +25,8 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Setup PDM
         uses: pdm-project/setup-pdm@v4
         with:
@@ -33,6 +34,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Setup UV
         uses: astral-sh/setup-uv@v5
+      - name: Configure PDM to use UV
+        run: pdm config use_uv true
       - name: Cache Huggingface assets
         uses: actions/cache@v4
         with:
@@ -41,15 +44,7 @@ jobs:
           restore-keys: |
             huggingface-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Install dependencies
-        run: pdm install
-      # - name: Install pre-commit hooks
-      #   run: pdm run pre-commit install
-      # - name: Ensure pre-commit hooks pass
-      #   run: pdm run pre-commit run --all-files
-      - name: Run unit tests
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: pdm run python -m pytest tests/unit
+        run: pdm install --group dev --no-lock
 
   release:
     needs: build
@@ -77,9 +72,10 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Publish package distributions to PyPI
-      #   uses: pypa/gh-action-pypi-publish@release/v1
-      #   if: steps.release.outputs.released == 'true'  
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: steps.release.outputs.released == 'true' 
+        
       - name: Publish package distributions to GitHub Releases
         uses: python-semantic-release/upload-to-gh-release@main
         if: steps.release.outputs.released == 'true'

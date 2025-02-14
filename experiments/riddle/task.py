@@ -7,6 +7,7 @@ from tiny_eval.core.constants import Model
 from tiny_eval.inference import get_response
 from tiny_eval.inference.data_models import InferencePrompt
 from tiny_eval.core.messages import Message, MessageRole
+from tiny_eval.task.base import TaskResult
 
 @dataclass
 class RiddleTaskConfig(BaseTaskConfig):
@@ -72,7 +73,7 @@ class RiddleTask(Task[RiddleTaskConfig, Dict[str, Any]]):
         except IndexError:
             return response.strip()
 
-    async def run_single(self, config: RiddleTaskConfig) -> Dict[str, Any]:
+    async def run_single(self, config: RiddleTaskConfig) -> TaskResult[Dict[str, Any]]:
         """Run a single instance of the Riddle task"""
         try:
             # Generate riddle
@@ -98,9 +99,7 @@ class RiddleTask(Task[RiddleTaskConfig, Dict[str, Any]]):
             # Evaluate result
             is_correct = answer.lower() == config.target_word.lower()
             
-            return {
-                "status": "success",
-                "error": None,
+            result_data = {
                 "target_word": config.target_word,
                 "riddle": riddle,
                 "solver_response": solver_response,
@@ -110,13 +109,14 @@ class RiddleTask(Task[RiddleTaskConfig, Dict[str, Any]]):
                 "riddler_model": config.riddler.value,
                 "solver_model": config.solver.value
             }
+            
+            return TaskResult(status="success", data=result_data)
 
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
+            error_data = {
                 "target_word": config.target_word,
                 "name": config.name,
                 "riddler_model": config.riddler.value,
                 "solver_model": config.solver.value
             }
+            return TaskResult(status="error", data=error_data, error=str(e))

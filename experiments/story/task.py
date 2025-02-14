@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Any
 import hashlib
 
-from tiny_eval.task.base import Task, BaseTaskConfig
+from tiny_eval.task.base import Task, BaseTaskConfig, TaskResult
 from tiny_eval.core.constants import Model
 from tiny_eval.inference import get_response
 from tiny_eval.inference.data_models import InferencePrompt
@@ -81,7 +81,7 @@ class StoryTask(Task[StoryTaskConfig, Dict[str, Any]]):
         except IndexError:
             return response.strip()
 
-    async def run_single(self, config: StoryTaskConfig) -> Dict[str, Any]:
+    async def run_single(self, config: StoryTaskConfig) -> TaskResult[Dict[str, Any]]:
         """Run a single instance of the Story task"""
         try:
             # Generate story
@@ -108,26 +108,29 @@ class StoryTask(Task[StoryTaskConfig, Dict[str, Any]]):
             # Evaluate result
             is_correct = answer.lower() == config.target_concept.lower()
             
-            return {
-                "status": "success",
-                "error": None,
-                "target_concept": config.target_concept,
-                "story": story,
-                "storyteller_reasoning": storyteller_reasoning,
-                "guesser_response": guesser_response,
-                "answer": answer,
-                "is_correct": is_correct,
-                "name": config.name,
-                "storyteller_model": config.storyteller.value,
-                "guesser_model": config.guesser.value
-            }
+            return TaskResult(
+                status="success",
+                data={
+                    "target_concept": config.target_concept,
+                    "story": story,
+                    "storyteller_reasoning": storyteller_reasoning,
+                    "guesser_response": guesser_response,
+                    "answer": answer,
+                    "is_correct": is_correct,
+                    "name": config.name,
+                    "storyteller_model": config.storyteller.value,
+                    "guesser_model": config.guesser.value
+                }
+            )
 
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "target_concept": config.target_concept,
-                "name": config.name,
-                "storyteller_model": config.storyteller.value,
-                "guesser_model": config.guesser.value
-            }
+            return TaskResult(
+                status="error",
+                error=str(e),
+                data={
+                    "target_concept": config.target_concept,
+                    "name": config.name,
+                    "storyteller_model": config.storyteller.value,
+                    "guesser_model": config.guesser.value
+                }
+            )

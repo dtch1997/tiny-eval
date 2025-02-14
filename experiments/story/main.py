@@ -22,7 +22,7 @@ async def main():
     # Define available models
     available_models = [
         Model.GPT_4o,
-        # Model.CLAUDE_3_5_SONNET,
+        Model.CLAUDE_3_5_SONNET,
         # Model.DEEPSEEK_R1,
         # Model.GPT_4o_mini,
         # Model.DEEPSEEK_R0,
@@ -50,12 +50,18 @@ async def main():
     
     # Run all configs with caching and progress bar
     results = await task.run(configs, desc="Running Story tasks")
+    results_data = [
+        {
+            "status": r.status,
+            "error": r.error,
+            **(r.data if r.data else {})
+        }
+        for r in results
+    ]
     
     # Save combined results
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(results_data)
     print("\nSample results:")
-    print(df[['target_concept', 'story', 'answer', 'is_correct']].head())
-    print("\nAccuracy:", df[df['status'] == 'success']['is_correct'].mean())
     print("\nErrors:", df['error'].unique())
     
     # Save to CSV

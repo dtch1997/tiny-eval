@@ -3,6 +3,7 @@ import pandas as pd
 import pathlib
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Setup paths
 curr_dir = pathlib.Path(__file__).parent
@@ -15,56 +16,101 @@ def load_data() -> pd.DataFrame:
         st.stop()
         
     df = pd.read_csv(results_path)
+    
+    # Normalize the data structure from TaskResult format
+    if 'data' in df.columns:
+        # Extract fields from the data column if it exists
+        data_df = pd.json_normalize(df['data'])
+        df = pd.concat([df.drop(['data'], axis=1), data_df], axis=1)
+    
     # Convert boolean columns if present
     if 'is_correct' in df.columns:
         df['is_correct'] = df['is_correct'].astype(bool)
     return df
 
-def create_performance_heatmap(df: pd.DataFrame) -> plt.Figure:
+def create_performance_plot(df: pd.DataFrame) -> plt.Figure:
     """
-    Create a heatmap showing success rates between riddler and solver models
+    Create a bar plot showing success rates between riddler and solver models with error bars
     
     Args:
         df: DataFrame containing the results
         
     Returns:
-        matplotlib.figure.Figure: The heatmap figure
+        matplotlib.figure.Figure: The bar plot figure
     """
     # Filter for successful attempts only
     success_df = df[df['status'] == 'success']
     
-    # Create pivot table of success rates
-    pivot = pd.pivot_table(
-        success_df,
-        values='is_correct',
-        index='riddler_model',
-        columns='solver_model',
-        aggfunc='mean'
-    )
+    # Calculate statistics for each model combination
+    stats = []
+    for riddler in success_df['riddler_model'].unique():
+        for solver in success_df['solver_model'].unique():
+            data = success_df[
+                (success_df['riddler_model'] == riddler) & 
+                (success_df['solver_model'] == solver)
+            ]['is_correct']
+            
+            if len(data) > 0:
+                mean = data.mean()
+                stderr = data.std() / np.sqrt(len(data))
+                stats.append({
+                    'riddler_model': riddler,
+                    'solver_model': solver,
+                    'mean': mean,
+                    'stderr': stderr,
+                    'count': len(data)
+                })
     
-    # Create figure and axis with smaller size
-    fig, ax = plt.subplots(figsize=(12, 12))
+    stats_df = pd.DataFrame(stats)
     
-    # Create heatmap
-    sns.heatmap(
-        pivot,
-        annot=True,  # Show values in cells
-        fmt='.1%',   # Format as percentages
-        cmap='RdYlGn',  # Red to Yellow to Green colormap
-        vmin=0,
-        vmax=1,
-        cbar_kws={'label': 'Success Rate'},
-        ax=ax,
-        square=True  # Make cells square for better appearance
-    )
+    # Create figure
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Set up bar positions
+    solvers = stats_df['solver_model'].unique()
+    riddlers = stats_df['riddler_model'].unique()
+    x = np.arange(len(solvers))
+    width = 0.8 / len(riddlers)  # Adjust bar width based on number of riddlers
+    
+    # Plot bars for each riddler
+    for i, riddler in enumerate(riddlers):
+        riddler_data = stats_df[stats_df['riddler_model'] == riddler]
+        
+        # Plot bars with error bars
+        bars = ax.bar(
+            x + i * width - (len(riddlers)-1) * width/2, 
+            riddler_data['mean'],
+            width,
+            label=f'Riddler: {riddler}',
+            yerr=riddler_data['stderr'],
+            capsize=5
+        )
+        
+        # Add value labels on top of bars
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width()/2,
+                height,
+                f'{height:.1%}',
+                ha='center',
+                va='bottom',
+                size=8
+            )
     
     # Customize appearance
-    plt.title('Model Performance Matrix', pad=10)
-    plt.xlabel('Solver Model', labelpad=10)
-    plt.ylabel('Riddler Model', labelpad=10)
+    ax.set_ylabel('Success Rate')
+    ax.set_xlabel('Solver Model')
+    ax.set_title('Model Performance by Riddler-Solver Pairs\n(mean ± standard error)')
+    ax.set_xticks(x)
+    ax.set_xticklabels(solvers, rotation=45, ha='right')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+    ax.set_ylim(0, 1)  # Set y-axis from 0 to 1
     
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45, ha='right')
+    # Format y-axis as percentages
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+    
     plt.tight_layout()
     
     return fig
@@ -107,19 +153,20 @@ def main():
             st.metric("Total Riddles", total_riddles)
             
         # Add spacing
-        st.markdown("### 🎯 Model Performance Matrix")
-        st.markdown("This heatmap shows how well each solver model performs against riddles created by different riddler models:")
+        st.markdown("### 🎯 Model Performance")
+        st.markdown("This plot shows how well each solver model performs against riddles created by different riddler models:")
         
-        # Create and display heatmap
-        fig = create_performance_heatmap(df)
+        # Create and display performance plot
+        fig = create_performance_plot(df)
         st.pyplot(fig)
         
-        # Add explanation of the heatmap
+        # Add explanation of the plot
         st.markdown("""
-        **How to read the heatmap:**
-        - Each cell shows the success rate of a solver model (columns) solving riddles created by a riddler model (rows)
-        - Darker green indicates higher success rates
-        - Darker red indicates lower success rates
+        **How to read the plot:**
+        - Each group shows a solver model's performance
+        - Different colored bars represent different riddler models
+        - Error bars show the standard error of the mean
+        - Higher values indicate better performance
         """)
     
     # Initialize session state for tracking revealed answers

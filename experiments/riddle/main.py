@@ -21,17 +21,17 @@ async def main():
     
     # Define available models
     available_models = [
-        # Model.GPT_4o,
-        # Model.CLAUDE_3_5_SONNET,
+        Model.GPT_4o,
+        Model.CLAUDE_3_5_SONNET,
         # Model.DEEPSEEK_R1,
         # Model.GPT_4o_mini,
-        Model.DEEPSEEK_R0,
+        # Model.DEEPSEEK_R0,
     ]
     
     # Get all combinations of riddler and solver models
     model_pairs = list(product(available_models, available_models))
     
-    words = get_random_subset(n=20, seed=0)
+    words = get_random_subset(n=100, seed=0)
     
     # Generate configs for all model combinations
     configs = [
@@ -50,8 +50,18 @@ async def main():
     # Run all configs with caching and progress bar
     results = await task.run(configs, desc="Running Riddle tasks")
     
+    # Convert TaskResults to DataFrame-friendly format
+    results_data = [
+        {
+            "status": r.status,
+            "error": r.error,
+            **(r.data if r.data else {})
+        }
+        for r in results
+    ]
+    
     # Save combined results
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(results_data)
     print("\nSample results:")
     print(df[['target_word', 'riddle', 'answer', 'is_correct']].head())
     print("\nAccuracy:", df[df['status'] == 'success']['is_correct'].mean())
