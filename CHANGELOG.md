@@ -2,6 +2,13 @@
 
 
 
+## v0.5.0 (2025-02-14)
+
+### Feature
+
+* feat: rebuild after semantic release so wheel has correct vn number ([`d15b8db`](https://github.com/dtch1997/tiny-eval/commit/d15b8db113d09dd4cfa376034d1b6a2549bf2f6b))
+
+
 ## v0.4.0 (2025-02-14)
 
 ### Feature
