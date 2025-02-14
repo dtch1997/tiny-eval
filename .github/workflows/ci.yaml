@@ -66,14 +66,15 @@ jobs:
         with:
           cache: false
           python-version: "3.12"
-      - name: build
-        run: pdm build
       - name: Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v8.0.7
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build package with updated version
+        if: steps.release.outputs.released == 'true'
+        run: pdm build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         if: steps.release.outputs.released == 'true' 
