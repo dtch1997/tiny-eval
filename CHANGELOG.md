@@ -2,6 +2,13 @@
 
 
 
+## v0.4.0 (2025-02-14)
+
+### Feature
+
+* feat: fix ci, version bump ([`6c867f3`](https://github.com/dtch1997/tiny-eval/commit/6c867f305e518b8db878bca0c4bc5698e0fd7bac))
+
+
 ## v0.3.0 (2025-02-14)
 
 ### Chore
