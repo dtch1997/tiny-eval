@@ -24,7 +24,8 @@ async def main():
         Model.GPT_4o,
         Model.CLAUDE_3_5_SONNET,
         # Model.DEEPSEEK_R1,
-        # Model.GPT_4o_mini,
+        Model.GPT_4o_mini,
+        Model.GROK_2,
         # Model.DEEPSEEK_R0,
     ]
     
