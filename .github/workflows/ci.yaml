@@ -45,6 +45,8 @@ jobs:
             huggingface-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Install dependencies
         run: pdm install --group dev --no-lock
+      - name: Run unit tests
+        run: pdm run python -m pytest tests/unit
 
   release:
     needs: build
