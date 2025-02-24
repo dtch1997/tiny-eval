@@ -4,6 +4,8 @@ import pathlib
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import List, Dict
+import textwrap
 
 # Setup paths
 curr_dir = pathlib.Path(__file__).parent
@@ -115,6 +117,29 @@ def create_performance_plot(df: pd.DataFrame) -> plt.Figure:
     
     return fig
 
+def display_riddles(df: pd.DataFrame, page: int = 0, per_page: int = 10):
+    total_riddles = len(df)
+    total_pages = (total_riddles + per_page - 1) // per_page  # Round up division
+    
+    if page >= total_pages:
+        print(f"Invalid page number. Total pages: {total_pages}")
+        return
+    
+    start_idx = page * per_page
+    end_idx = min(start_idx + per_page, total_riddles)
+    
+    print(f"\nShowing riddles {start_idx+1}-{end_idx} of {total_riddles} (Page {page+1} of {total_pages})")
+    print("-" * 80)
+    
+    for idx in range(start_idx, end_idx):
+        row = df.iloc[idx]
+        print(f"\nRiddle {idx+1}: (Target: {row['target_word']})")
+        print(textwrap.fill(row['riddle'], width=80))
+        print(f"Solver response: {row['solver_response'][:100]}...")
+        print(f"Answer given: {row['answer']}")
+        print(f"Correct: {row['is_correct']}")
+        print("-" * 80)
+
 def main():
     st.title("🧩 Riddle Me This!")
     
@@ -225,49 +250,28 @@ def main():
     
     # Display individual riddles
     st.markdown("### 🎯 Can You Solve These Riddles?")
-    for idx, row in filtered_df.iterrows():
-        st.markdown("---")
-        st.markdown(f"### Riddle #{idx + 1}")
+    page = 0
+    per_page = 5
+    
+    while True:
+        display_riddles(filtered_df, page, per_page)
         
-        # Display the riddle in a prominent way
-        st.markdown(f"```\n{row['riddle']}\n```")
+        command = input("\nEnter command (n: next page, p: previous page, q: quit, number: go to page): ").lower()
         
-        # Create columns for reveal/hide buttons
-        col1, col2 = st.columns([1, 4])
-        
-        # Toggle button for showing/hiding answer
-        if idx not in st.session_state.revealed_answers:
-            if col1.button(f"🔍 Reveal Answer #{idx + 1}"):
-                st.session_state.revealed_answers.add(idx)
-                st.rerun()
+        if command == 'q':
+            break
+        elif command == 'n':
+            page += 1
+        elif command == 'p':
+            page = max(0, page - 1)
+        elif command.isdigit():
+            new_page = int(command) - 1  # Convert to 0-based indexing
+            if 0 <= new_page < (len(filtered_df) + per_page - 1) // per_page:
+                page = new_page
+            else:
+                print("Invalid page number")
         else:
-            if col1.button(f"🙈 Hide Answer #{idx + 1}"):
-                st.session_state.revealed_answers.remove(idx)
-                st.rerun()
-        
-        # Show answer and details if revealed
-        if idx in st.session_state.revealed_answers:
-            st.markdown("#### Results")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**🎯 Correct Answer**")
-                st.info(row['target_word'])
-                
-            with col2:
-                st.markdown("**🤖 Model's Guess**")
-                if row['is_correct']:
-                    st.success(row['answer'])
-                else:
-                    st.error(row['answer'])
-            
-            # Show model's full reasoning in a collapsible section
-            with st.expander("🤔 See Model's Reasoning", expanded=False):
-                st.text(row['solver_response'])
-                
-            # Show model information
-            st.markdown("##### Models Used")
-            st.text(f"Riddler: {row['riddler_model']}\nSolver: {row['solver_model']}")
+            print("Invalid command")
 
 if __name__ == "__main__":
     st.set_page_config(
