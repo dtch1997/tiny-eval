@@ -26,6 +26,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 class Model(str, Enum):
     # Anthropic
     CLAUDE_3_5_SONNET = "anthropic/claude-3.5-sonnet"
+    CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku"
     # Grok
     GROK_2 = "x-ai/grok-2-1212"
     # Llama

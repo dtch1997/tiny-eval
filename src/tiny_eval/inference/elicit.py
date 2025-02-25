@@ -18,6 +18,7 @@ async def elicit(
     elicitor_model: Model | str = Model.CLAUDE_3_5_SONNET,
     num_attempts: int = 5,
     params: Optional[InferenceParams] = None,
+    feedback: Optional[List[Dict[str, str]]] = None,
 ) -> List[ElicitationResult]:
     """
     Elicit specific behavior from a target model using an elicitor model to generate prompts.
@@ -28,6 +29,8 @@ async def elicit(
         elicitor_model: Model to use for generating elicitation prompts
         num_attempts: Number of different prompts to try
         params: Optional inference parameters for model calls
+        feedback: Optional list of feedback on previous elicitation attempts.
+                 Each item should be a dict with keys 'prompt', 'response', and 'feedback'.
         
     Returns:
         List of ElicitationResult objects containing prompts and responses
@@ -46,7 +49,16 @@ Make the prompts diverse in their approaches - try different techniques like:
 - Step-by-step guidance
 - Examples and analogies
 - Socratic questioning
+"""
 
+    # Add feedback if provided
+    if feedback and len(feedback) > 0:
+        elicitor_prompt += "\n\nHere is feedback on previous elicitation attempts. Use this to improve your prompts:\n"
+        for i, item in enumerate(feedback):
+            elicitor_prompt += f"\nAttempt {i+1}:\nPrompt: {item.get('prompt', 'N/A')}\nResponse: {item.get('response', 'N/A')}\nFeedback: {item.get('feedback', 'N/A')}\n"
+        elicitor_prompt += "\nBased on this feedback, generate new prompts that address the issues and improve on successful approaches."
+
+    elicitor_prompt += """
 Response format example:
 [
     "First prompt approach...",
