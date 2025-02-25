@@ -2,7 +2,7 @@ import os
 
 from enum import Enum
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 PROJECT_DIR = os.getenv("PROJECT_DIR")
 if PROJECT_DIR is None:
@@ -12,16 +12,17 @@ else:
     project_dir = Path(PROJECT_DIR)
 
 load_dotenv(project_dir / ".env")
+vals = dotenv_values(project_dir / ".env")
 
-CACHE_DIR = Path(os.getenv("CACHE_DIR", project_dir / "cache"))
+CACHE_DIR = os.getenv("CACHE_DIR", project_dir / "cache")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = vals["OPENROUTER_API_KEY"]
 
 HYPERBOLIC_BASE_URL = "https://api.hyperbolic.xyz/v1"
-HYPERBOLIC_API_KEY = os.getenv("HYPERBOLIC_API_KEY")
+HYPERBOLIC_API_KEY = vals["HYPERBOLIC_API_KEY"]
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = vals["OPENAI_API_KEY"]
 
 class Model(str, Enum):
     # Anthropic

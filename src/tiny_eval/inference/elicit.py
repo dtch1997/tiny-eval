@@ -30,7 +30,7 @@ async def elicit(
         num_attempts: Number of different prompts to try
         params: Optional inference parameters for model calls
         feedback: Optional list of feedback on previous elicitation attempts.
-                 Each item should be a dict with keys 'prompt', 'response', and 'feedback'.
+                Each item should be a dict with keys 'prompt', 'response', and 'feedback'.
         
     Returns:
         List of ElicitationResult objects containing prompts and responses
@@ -77,9 +77,14 @@ Response format example:
         prompt=elicitor_prompt,
         params=elicitor_params
     )
-    
-    import json
-    prompts = json.loads(prompts_json)
+
+    try:        
+        import json
+        prompts = json.loads(prompts_json)
+        
+    except json.JSONDecodeError as e:
+        print(prompts_json)
+
     
     # Try each prompt on the target model
     results = []
@@ -97,4 +102,4 @@ Response format example:
             response=response
         ))
     
-    return results 
+    return results

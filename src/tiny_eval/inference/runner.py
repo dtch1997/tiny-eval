@@ -7,6 +7,9 @@ from tiny_eval.inference.data_models import InferenceParams, InferencePrompt
 from tiny_eval.core.messages import Message, MessageRole
 from typing import Union
 
+def _looks_like_openai_model(model: str) -> bool:
+    return model.startswith("openai/") or model.startswith("ft:")
+
 def build_inference_api(model: Union[str, Model]) -> InferenceAPIInterface:
     """
     Build an inference API for a given model
@@ -17,10 +20,10 @@ def build_inference_api(model: Union[str, Model]) -> InferenceAPIInterface:
     Returns:
         InferenceAPIInterface: Appropriate API client for the model
     """
-    if isinstance(model, str):
-        model = Model(model)
-
-    if model.value.startswith("openai/"):
+    if isinstance(model, Model):
+        model = model.value
+    
+    if _looks_like_openai_model(model):
         return OpenAIInferenceAPI()
     elif model == Model.DEEPSEEK_R0:
         # Only available on Hyperbolic
@@ -45,11 +48,11 @@ async def get_response(
     Returns:
         str: The response content as a string
     """
-    if isinstance(model, str):
-        model = Model(model)
+    if isinstance(model, Model):
+        model = model.value
     api = build_inference_api(model)
     if isinstance(prompt, str):
         prompt = InferencePrompt(messages=[Message(role=MessageRole.user, content=prompt)])
     params = params or InferenceParams()
-    response = await api(model.value, prompt, params)
+    response = await api(model, prompt, params)
     return response.choices[0].message.content
